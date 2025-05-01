@@ -1,16 +1,33 @@
-# karasu_launcher
+# Karasu Launcher
 
-A new Flutter project.
+Karasu Launcher is an unofficial Minecraft Java Edition launcher.
 
-## Getting Started
+## Overview
 
-This project is a starting point for a Flutter application.
+Karasu Launcher is a application designed to easily launch and manage Minecraft Java Edition. It provides a simple and modern UI for efficiently launching the game, managing mods, connecting to multiplayer servers, and more.
 
-A few resources to get you started if this is your first Flutter project:
+**Disclaimer:** This launcher is unofficial and not affiliated with or endorsed by Mojang or Microsoft.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Key Features
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Launch and manage Minecraft Java Edition
+- MOD management (CurseForge, Modrinth support)
+- Multiplayer server list
+- Multiple Minecraft account management
+- Customizable settings
+
+## Tech Stack
+
+- Flutter
+- Riverpod
+- Go Router
+- bitsdojo_window (window management)
+
+## How to Use
+
+**Note:** Authentication feature is currently under development.
+
+1. Launch the application
+2. Login with your Minecraft account
+3. Configure mods and servers as needed
+4. Launch Minecraft and enjoy!
