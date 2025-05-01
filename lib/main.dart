@@ -3,10 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/router/routes.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 const methodChannel = MethodChannel('com.karasu256.karasu_launcher/window');
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
   runApp(ProviderScope(child: const MyApp()));
 
   doWhenWindowReady(() {

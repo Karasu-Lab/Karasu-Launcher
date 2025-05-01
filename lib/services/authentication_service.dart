@@ -10,10 +10,11 @@ import '../models/auth/xsts_response.dart';
 import '../models/auth/minecraft_token_response.dart';
 import '../models/auth/minecraft_profile.dart';
 import '../models/auth/xbox_profile.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthenticationService {
   // クライアントID
-  static const String _clientId = '';
+  static final String _clientId = dotenv.get('MICROSOFT_CLIENT_ID');
 
   // トークン保存用のキー
   static const String _refreshTokenKey = 'minecraft_refresh_token';
