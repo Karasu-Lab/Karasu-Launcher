@@ -15,6 +15,7 @@ Karasu Launcher is a application designed to easily launch and manage Minecraft 
 - Multiplayer server list - *Under development*
 - Multiple Minecraft account management - *Under development*
 - Customizable settings - *Under development*
+- View your screenshot files
 
 ## Tech Stack
 
