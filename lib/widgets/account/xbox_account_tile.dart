@@ -1,0 +1,417 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:karasu_launcher/models/auth/minecraft_profile.dart';
+import 'package:karasu_launcher/models/auth/account.dart';
+import 'package:karasu_launcher/providers/authentication_provider.dart';
+
+class XboxAccountTile extends ConsumerWidget {
+  final Account account;
+  final bool isActive;
+  final VoidCallback? onTap;
+  final VoidCallback? onSignOut;
+  final VoidCallback? onRefresh;
+
+  const XboxAccountTile({
+    super.key,
+    required this.account,
+    this.isActive = false,
+    this.onTap,
+    this.onSignOut,
+    this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = account.profile;
+    final hasValidToken =
+        account.hasValidMinecraftToken && account.hasValidXboxToken;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color:
+            isActive
+                ? Theme.of(context).colorScheme.primaryContainer
+                : Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color:
+              isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.transparent,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color.fromRGBO(0, 0, 0, 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              children: [
+                // アバター画像
+                _buildProfileAvatar(profile),
+                const SizedBox(width: 12),
+
+                // アカウント情報
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        profile?.name ?? 'Unknown User',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color:
+                              isActive
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        hasValidToken ? '認証済み' : 'トークンの更新が必要',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: hasValidToken ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      if (account.profile?.id != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'UUID: ${_formatUuid(account.profile!.id)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // アクションボタン
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onRefresh != null)
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        tooltip: 'トークン更新',
+                        onPressed: onRefresh,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    if (onSignOut != null)
+                      IconButton(
+                        icon: const Icon(Icons.logout),
+                        tooltip: 'サインアウト',
+                        onPressed: onSignOut,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileAvatar(MinecraftProfile? profile) {
+    if (profile != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(color: Colors.grey[800]),
+          child:
+              profile.skinUrl != null
+                  ? Image.network(
+                    profile.skinUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (context, error, stackTrace) => const Icon(
+                          Icons.account_box,
+                          size: 32,
+                          color: Colors.white70,
+                        ),
+                  )
+                  : const Icon(
+                    Icons.account_circle,
+                    size: 32,
+                    color: Colors.white70,
+                  ),
+        ),
+      );
+    } else {
+      return Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: Colors.grey[800],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(
+          Icons.account_circle,
+          size: 32,
+          color: Colors.white70,
+        ),
+      );
+    }
+  }
+
+  String _formatUuid(String uuid) {
+    if (uuid.length == 32) {
+      return '${uuid.substring(0, 8)}-${uuid.substring(8, 12)}-'
+          '${uuid.substring(12, 16)}-${uuid.substring(16, 20)}-'
+          '${uuid.substring(20)}';
+    }
+    return uuid;
+  }
+}
+
+/// ポップアップでXboxアカウントタイルを表示するボタンウィジェット
+class XboxAccountButton extends ConsumerWidget {
+  final VoidCallback? onAccountChanged;
+
+  const XboxAccountButton({super.key, this.onAccountChanged});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authenticationProvider);
+    final activeAccount = authState.activeAccount;
+
+    // アクティブアカウントのアバターを表示
+    Widget avatarWidget = Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Icon(Icons.account_circle, color: Colors.white70, size: 24),
+    );
+
+    // アクティブアカウントが存在する場合の表示処理
+    if (activeAccount != null) {
+      // Minecraft認証がされているかチェック
+      if (activeAccount.hasValidMinecraftToken) {
+        // Minecraft認証済みで、スキンURLが存在する場合はそのアバターを表示
+        if (activeAccount.profile?.skinUrl != null) {
+          avatarWidget = ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.network(
+              activeAccount.profile!.skinUrl!,
+              width: 32,
+              height: 32,
+              fit: BoxFit.cover,
+              errorBuilder:
+                  (context, error, stackTrace) => Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.account_circle,
+                      color: Colors.white70,
+                      size: 24,
+                    ),
+                  ),
+            ),
+          );
+        } else {
+          // スキンURLがない場合はデフォルトのMinecraftアイコンを表示
+          avatarWidget = Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.grey[800],
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.account_box,
+              color: Colors.white70,
+              size: 24,
+            ),
+          );
+        }
+      } else {
+        // Minecraft認証がされていない場合はXboxアイコンを表示
+        avatarWidget = Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Colors.grey[800],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.sports_esports, // Xboxのアイコン
+            color: Colors.white70,
+            size: 24,
+          ),
+        );
+      }
+    }
+
+    return Tooltip(
+      message: 'Xboxアカウント',
+      child: InkWell(
+        onTap: () => _showAccountsDialog(context, ref),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(padding: const EdgeInsets.all(4.0), child: avatarWidget),
+      ),
+    );
+  }
+
+  Future<void> _showAccountsDialog(BuildContext context, WidgetRef ref) async {
+    final authNotifier = ref.read(authenticationProvider.notifier);
+    final authState = ref.read(authenticationProvider);
+
+    await showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Xboxアカウント',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  ...authState.accounts.map((account) {
+                    final isActive = account.id == authState.activeAccountId;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: XboxAccountTile(
+                        account: account,
+                        isActive: isActive,
+                        onTap:
+                            isActive
+                                ? null
+                                : () async {
+                                  await authNotifier.setActiveAccount(
+                                    account.id,
+                                  );
+                                  if (onAccountChanged != null) {
+                                    onAccountChanged!();
+                                  }
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                  }
+                                },
+                        onRefresh: () async {
+                          if (isActive) {
+                            await authNotifier.refreshActiveAccount();
+                            if (onAccountChanged != null) {
+                              onAccountChanged!();
+                            }
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                            }
+                          } else {
+                            await authNotifier.setActiveAccount(account.id);
+                            await authNotifier.refreshActiveAccount();
+                            if (onAccountChanged != null) {
+                              onAccountChanged!();
+                            }
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                            }
+                          }
+                        },
+                        onSignOut: () async {
+                          final confirmed = await _confirmSignOut(
+                            context,
+                            account,
+                          );
+                          if (confirmed) {
+                            await authNotifier.removeAccount(account.id);
+                            if (onAccountChanged != null) {
+                              onAccountChanged!();
+                            }
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                            }
+                          }
+                        },
+                      ),
+                    );
+                  }),
+
+                  // 新規アカウント追加ボタン
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('新規アカウント追加'),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/accounts/add');
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      child: const Text('閉じる'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  Future<bool> _confirmSignOut(BuildContext context, Account account) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('サインアウトの確認'),
+            content: Text('${account.profile?.name ?? "このアカウント"}からサインアウトしますか？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('キャンセル'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('サインアウト'),
+              ),
+            ],
+          ),
+    );
+    return result ?? false;
+  }
+}
