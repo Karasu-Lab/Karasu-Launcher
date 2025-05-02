@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/models/minecraft_state.dart';
+import 'package:karasu_launcher/providers/authentication_provider.dart';
 import 'package:karasu_launcher/providers/minecraft_state_provider.dart';
 import 'package:karasu_launcher/utils/minecraft_utils.dart';
 
@@ -12,9 +13,12 @@ class MinecraftService {
   final Ref _ref;
 
   MinecraftService(this._ref);
-
-  Future<void> launchMinecraftAsService(Profile profile) async {
+  Future<void> launchMinecraftAsService(
+    Profile profile, {
+    String? offlinePlayerName,
+  }) async {
     final notifier = _ref.read(minecraftStateProvider.notifier);
+    final account = _ref.read(activeAccountProvider);
 
     notifier.setLaunching(true);
     notifier.updateProgress(0.0, '準備中...');
@@ -22,6 +26,19 @@ class MinecraftService {
       'Minecraftの起動を開始します (バージョン: ${profile.lastVersionId})',
       level: LogLevel.info,
     );
+
+    if (account != null) {
+      notifier.addLog(
+        'アカウント: ${account.profile?.name ?? "不明"} としてログインします',
+        level: LogLevel.info,
+      );
+    } else {
+      final playerName = offlinePlayerName ?? 'Player';
+      notifier.addLog(
+        '警告: アクティブなアカウントが見つかりません。オフラインモードで起動します (プレイヤー名: $playerName)',
+        level: LogLevel.warning,
+      );
+    }
 
     try {
       await launchMinecraft(
@@ -32,6 +49,8 @@ class MinecraftService {
         onStdout: _handleStdout,
         onStderr: _handleStderr,
         onExit: notifier.onExit,
+        account: account,
+        offlinePlayerName: offlinePlayerName,
       );
     } catch (e) {
       notifier.addLog('Minecraftの起動中にエラーが発生しました: $e', level: LogLevel.error);

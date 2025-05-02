@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
 import 'package:karasu_launcher/providers/authentication_provider.dart';
+import 'dart:io';
 
 class LoadingPage extends ConsumerStatefulWidget {
   const LoadingPage({super.key});
@@ -23,6 +24,24 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
     _initializeApp();
   }
 
+  // インターネット接続をチェックするメソッド
+  Future<bool> _checkInternetConnection() async {
+    try {
+      setState(() {
+        _loadingMessage = 'インターネット接続を確認しています...';
+      });
+
+      final result = await InternetAddress.lookup('google.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException catch (e) {
+      debugPrint('インターネット接続がありません: $e');
+      return false;
+    } catch (e) {
+      debugPrint('接続確認中にエラーが発生しました: $e');
+      return false;
+    }
+  }
+
   Future<void> _initializeApp() async {
     try {
       setState(() {
@@ -31,40 +50,81 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
 
       await ref.read(profilesInitializedProvider.future);
 
+      // インターネット接続チェック
+      final hasInternet = await _checkInternetConnection();
+
       // 認証状態を確認
       setState(() {
         _loadingMessage = '認証状態を確認しています...';
       });
 
       final authState = ref.read(authenticationProvider);
+      final authNotifier = ref.read(authenticationProvider.notifier);
 
-      if (authState.activeAccount != null) {
-        // アクセストークンが無効な場合、更新を試みる
-        if (!authState.activeAccount!.hasValidMinecraftToken ||
-            !authState.activeAccount!.hasValidXboxToken) {
+      // インターネット接続がない場合
+      if (!hasInternet) {
+        setState(() {
+          _loadingMessage = 'インターネット接続がありません。オフラインモードで続行します...';
+        });
+
+        // オフラインモードに設定
+        await authNotifier.clearActiveAccount();
+      }
+
+      if (hasInternet) {
+        if (authState.activeAccount != null) {
           setState(() {
-            _loadingMessage = 'Microsoftアカウントの認証を更新しています...';
+            _loadingMessage =
+                '${authState.activeAccount?.profile?.name ?? "Unknown"}さんとしてログインしています...';
           });
 
           try {
-            final authNotifier = ref.read(authenticationProvider.notifier);
-            final profile = await authNotifier.refreshActiveAccount();
+            // アクティブアカウントでログインを試みる
+            final account = await authNotifier.loginWithActiveAccount();
 
-            if (profile == null) {
-              // トークンのリフレッシュに失敗した場合
+            if (account != null) {
               setState(() {
-                _loadingMessage = '認証の更新に失敗しました';
+                _loadingMessage = '${account.profile?.name}さんとしてログインしました';
               });
               await Future.delayed(const Duration(seconds: 1));
             } else {
+              // 自動リフレッシュに失敗した場合でも明示的にトークン更新を試みる
+              final profile = await authNotifier.refreshActiveAccount();
+              if (profile != null) {
+                setState(() {
+                  _loadingMessage = '${profile.name}さんとしてログインしました（トークン更新済み）';
+                });
+                await Future.delayed(const Duration(seconds: 1));
+              } else {
+                setState(() {
+                  _loadingMessage = 'アカウントの認証に失敗しました';
+                });
+                await Future.delayed(const Duration(milliseconds: 800));
+              }
+            }
+          } catch (e) {
+            debugPrint('アクティブアカウントログインエラー: $e');
+          }
+        }
+        // アカウントがない場合はサイレントログインを試みる
+        else if (authState.accounts.isEmpty) {
+          setState(() {
+            _loadingMessage = 'サイレントログインを試みています...';
+          });
+
+          try {
+            final account = await authNotifier.silentLogin();
+
+            if (account != null) {
               setState(() {
-                _loadingMessage = '認証が更新されました';
+                _loadingMessage = '${account.profile?.name}さんとして自動ログインしました';
               });
+              await Future.delayed(const Duration(seconds: 1));
+            } else {
               await Future.delayed(const Duration(milliseconds: 500));
             }
           } catch (e) {
-            debugPrint('認証更新エラー: $e');
-            // エラーがあっても続行（ユーザーはあとで手動サインインできる）
+            debugPrint('サイレントログインエラー: $e');
           }
         }
       }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:karasu_launcher/models/auth/minecraft_profile.dart';
 import 'package:karasu_launcher/models/auth/account.dart';
+import 'package:karasu_launcher/widgets/minecraft_face.dart';
 
 /// ユーザーのMinecraftアイコンを表示するウィジェット
 class UserIcon extends StatelessWidget {
@@ -63,13 +64,10 @@ class UserIcon extends StatelessWidget {
   Widget _buildProfileAvatar(BuildContext context, MinecraftProfile profile) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
-      child: Image.network(
-        profile.skinUrl!,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder:
-            (context, error, stackTrace) => _buildDefaultIcon(context),
+      child: SizedBox(
+        width: 16,
+        height: 16,
+        child: MinecraftFace.network(profile.skinUrl!),
       ),
     );
   }
@@ -82,11 +80,7 @@ class UserIcon extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
       ),
-      child: Icon(
-        Icons.account_circle,
-        color: Colors.white70,
-        size: size,
-      ),
+      child: Icon(Icons.account_circle, color: Colors.white70, size: size),
     );
   }
 
@@ -110,11 +104,7 @@ class UserIcon extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
       ),
-      child: Icon(
-        Icons.sports_esports,
-        color: Colors.white70,
-        size: size
-      ),
+      child: Icon(Icons.sports_esports, color: Colors.white70, size: size),
     );
   }
 }

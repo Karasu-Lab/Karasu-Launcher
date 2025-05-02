@@ -104,11 +104,6 @@ RouteBase get $mainShellRouteData => StatefulShellRouteData.$route(
               factory: $AccountSignInRouteExtension._fromState,
             ),
             GoRouteData.$route(
-              path: 'add',
-
-              factory: $AccountAddRouteExtension._fromState,
-            ),
-            GoRouteData.$route(
               path: 'profile',
 
               factory: $AccountProfileRouteExtension._fromState,
@@ -319,22 +314,6 @@ extension $AccountSignInRouteExtension on AccountSignInRoute {
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $AccountAddRouteExtension on AccountAddRoute {
-  static AccountAddRoute _fromState(GoRouterState state) =>
-      const AccountAddRoute();
-
-  String get location => GoRouteData.$location('/accounts/add');
-
-  void go(BuildContext context) => context.go(location);
-
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  void replace(BuildContext context) => context.replace(location);
-}
-
 extension $AccountProfileRouteExtension on AccountProfileRoute {
   static AccountProfileRoute _fromState(GoRouterState state) =>
       const AccountProfileRoute();
@@ -376,11 +355,6 @@ RouteBase get $accountHomeRoute => GoRouteData.$route(
       path: 'sign-in',
 
       factory: $AccountSignInRouteExtension._fromState,
-    ),
-    GoRouteData.$route(
-      path: 'add',
-
-      factory: $AccountAddRouteExtension._fromState,
     ),
     GoRouteData.$route(
       path: 'profile',

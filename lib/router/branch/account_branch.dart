@@ -4,7 +4,6 @@ part of '../routes.dart';
   path: '/accounts',
   routes: [
     TypedGoRoute<AccountSignInRoute>(path: 'sign-in'),
-    TypedGoRoute<AccountAddRoute>(path: 'add'),
     TypedGoRoute<AccountProfileRoute>(path: 'profile'),
     TypedGoRoute<AccountSignOutRoute>(path: 'sign-out'),
   ],
@@ -24,15 +23,6 @@ class AccountSignInRoute extends GoRouteData {
   @override
   Widget build(BuildContext context, GoRouterState state) {
     return const AccountSignInPage();
-  }
-}
-
-class AccountAddRoute extends GoRouteData {
-  const AccountAddRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return const AccountAddPage();
   }
 }
 
@@ -60,7 +50,6 @@ const accountStatefulShellBranch = TypedStatefulShellBranch<AccountBranchData>(
       path: '/accounts',
       routes: [
         TypedGoRoute<AccountSignInRoute>(path: 'sign-in'),
-        TypedGoRoute<AccountAddRoute>(path: 'add'),
         TypedGoRoute<AccountProfileRoute>(path: 'profile'),
         TypedGoRoute<AccountSignOutRoute>(path: 'sign-out'),
       ],

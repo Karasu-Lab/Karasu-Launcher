@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart' hide Action;
 import 'package:http/http.dart' as http;
+import 'package:karasu_launcher/models/auth/account.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/models/minecraft_state.dart'; // LogSourceを使用するためにインポート
 import 'package:path/path.dart' as p;
@@ -374,6 +375,8 @@ Future<Process> launchMinecraft(
   MinecraftExitCallback? onExit,
   MinecraftOutputCallback? onStdout,
   MinecraftOutputCallback? onStderr,
+  Account? account,
+  String? offlinePlayerName,
 }) async {
   try {
     final versionId = profile.lastVersionId;
@@ -423,17 +426,18 @@ Future<Process> launchMinecraft(
         }
       }
     }
-
     final mainClass = versionInfo.mainClass;
     if (mainClass == null || mainClass.isEmpty) {
       throw Exception('バージョン情報にmainClassが指定されていません');
     }
 
-    final gameArgs = await constructGameArguments(
+    final gameArgs = await constructGameArgumentsWithAuth(
       versionInfo: versionInfo,
       appDir: appDir.path,
       gameDir: gameDir.path,
       versionId: versionId,
+      account: account,
+      offlinePlayerName: offlinePlayerName,
     );
 
     final javaPath = await findJavaPath(profile);
@@ -781,18 +785,108 @@ Future<List<String>> constructJvmArguments({
   return args;
 }
 
+Future<List<String>> constructGameArgumentsWithAuth({
+  required VersionInfo versionInfo,
+  required String appDir,
+  required String gameDir,
+  required String versionId,
+  Account? account,
+  String? offlinePlayerName,
+}) async {
+  // アカウントがない場合はオフラインモード
+  if (account == null) {
+    debugPrint('アカウント情報がありません。オフラインモードで起動します');
+    final username = offlinePlayerName ?? 'Player';
+    final args = await constructGameArguments(
+      versionInfo: versionInfo,
+      appDir: appDir,
+      gameDir: gameDir,
+      versionId: versionId,
+      username: username,
+      uuid: '00000000-0000-0000-0000-000000000000',
+      accessToken: '00000000000000000000000000000000',
+      userType: 'mojang', // オフラインモードではmojangタイプを使用
+    );
+
+    // --demoフラグが含まれていなければ追加（重複防止）
+    if (!args.contains('--demo')) {
+      debugPrint('デモモードで起動します');
+      args.add('--demo');
+    }
+
+    // --clientIdなどの引数を削除（マイクロソフト認証関連）
+    args.removeWhere(
+      (arg) => arg.startsWith('--clientId') || arg.startsWith('--xuid'),
+    );
+
+    return args;
+  }
+
+  // アカウントがある場合は、所有権チェックを行う
+  bool hasGameOwnership = false;
+  if (account.minecraftAccessToken != null) {
+    try {
+      // この関数は認証サービスに依存していますが、直接importすると循環参照になるため、
+      // 簡易版の所有権チェックをここで実装します
+      final response = await http.get(
+        Uri.parse('https://api.minecraftservices.com/entitlements/mcstore'),
+        headers: {'Authorization': 'Bearer ${account.minecraftAccessToken}'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['items'] != null) {
+          final items = data['items'] as List;
+          hasGameOwnership = items.isNotEmpty;
+        }
+      }
+      debugPrint('Minecraft所有権チェック結果: $hasGameOwnership');
+    } catch (e) {
+      debugPrint('所有権チェックエラー: $e');
+      // エラーの場合は所有権がないと見なす
+      hasGameOwnership = false;
+    }
+  } else {
+    // アクセストークンがない場合も所有権なしとみなす
+    debugPrint('アクセストークンがありません。所有権なしとみなします。');
+    hasGameOwnership = false;
+  }
+
+  final args = await constructGameArguments(
+    versionInfo: versionInfo,
+    appDir: appDir,
+    gameDir: gameDir,
+    versionId: versionId,
+    username: account.profile?.name ?? 'Player',
+    uuid: account.profile?.id ?? '00000000-0000-0000-0000-000000000000',
+    accessToken:
+        account.minecraftAccessToken ?? '00000000000000000000000000000000',
+    userType: 'microsoft', // Microsoftアカウントの場合
+  );
+
+  // 所有権がない場合はデモモードで起動
+  if (!hasGameOwnership) {
+    debugPrint('Minecraft: Java Editionの所有権がありません。デモモードで起動します');
+    // --demoフラグが含まれていなければ追加（重複防止）
+    if (!args.contains('--demo')) {
+      args.add('--demo');
+    }
+  }
+
+  return args;
+}
+
 Future<List<String>> constructGameArguments({
   required VersionInfo versionInfo,
   required String appDir,
   required String gameDir,
   required String versionId,
+  String? username = 'Player',
+  String? uuid = '00000000-0000-0000-0000-000000000000',
+  String? accessToken = '00000000000000000000000000000000',
+  String? userType = 'mojang',
 }) async {
   final args = <String>[];
-
-  const username = 'Player';
-  const uuid = '00000000-0000-0000-0000-000000000000';
-  const accessToken = '00000000000000000000000000000000';
-  const userType = 'mojang';
 
   if (versionInfo.arguments != null && versionInfo.arguments!.game != null) {
     final tempArgs = <String>[];
@@ -819,14 +913,14 @@ Future<List<String>> constructGameArguments({
           if (argValue is String) {
             String value = replaceArgumentPlaceholders(
               argValue,
-              username,
+              username!,
               versionId,
               gameDir,
               appDir,
               versionInfo.assetIndex?.id ?? 'legacy',
-              uuid,
-              accessToken,
-              userType,
+              uuid!,
+              accessToken!,
+              userType!,
               versionInfo.type ?? 'release',
             );
             tempArgs.add(value);
@@ -835,14 +929,14 @@ Future<List<String>> constructGameArguments({
               if (item is String) {
                 String value = replaceArgumentPlaceholders(
                   item,
-                  username,
+                  username!,
                   versionId,
                   gameDir,
                   appDir,
                   versionInfo.assetIndex?.id ?? 'legacy',
-                  uuid,
-                  accessToken,
-                  userType,
+                  uuid!,
+                  accessToken!,
+                  userType!,
                   versionInfo.type ?? 'release',
                 );
                 tempArgs.add(value);
@@ -908,15 +1002,15 @@ Future<List<String>> constructGameArguments({
 
     for (final arg in defaultArgs) {
       String processedArg = replaceArgumentPlaceholders(
-        arg,
-        username,
+        arg!,
+        username!,
         versionId,
         gameDir,
         appDir,
         versionInfo.assetIndex?.id ?? 'legacy',
-        uuid,
-        accessToken,
-        userType,
+        uuid!,
+        accessToken!,
+        userType!,
         versionInfo.type ?? 'release',
       );
       args.add(processedArg);

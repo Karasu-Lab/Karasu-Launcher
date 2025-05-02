@@ -9,53 +9,64 @@ import '../models/auth/device_code_response.dart';
 import '../models/auth/minecraft_profile.dart';
 import '../services/authentication_service.dart';
 
-// 認証状態を管理するプロバイダー
+final activeAccountProvider = Provider<Account?>((ref) {
+  final authState = ref.watch(authenticationProvider);
+  return authState.activeAccount;
+});
+
 final authenticationProvider =
     StateNotifierProvider<AuthenticationNotifier, AuthenticationState>((ref) {
       return AuthenticationNotifier();
     });
 
-// 認証状態を表すクラス
 class AuthenticationState {
-  final List<Account> accounts;
-  final String? activeAccountId;
+  final Map<String, Account> accounts;
+  final String? activeMicrosoftAccountId;
   final bool isInitialized;
+  final bool isRefreshing;
 
   const AuthenticationState({
-    this.accounts = const [],
-    this.activeAccountId,
+    this.accounts = const {},
+    this.activeMicrosoftAccountId,
     this.isInitialized = false,
+    this.isRefreshing = false,
   });
 
-  // アクティブなアカウントを取得
   Account? get activeAccount {
     try {
-      return accounts.firstWhere((account) => account.id == activeAccountId);
+      // activeMicrosoftAccountIdがnullの場合は常にnullを返す（オフラインモード）
+      if (activeMicrosoftAccountId == null) {
+        return null;
+      }
+      // アカウントの取得を試みる
+      return accounts[activeMicrosoftAccountId];
     } catch (_) {
-      return accounts.isNotEmpty ? accounts.first : null;
+      // 例外が発生した場合（通常は起きないが念のため）
+      return null;
     }
   }
 
-  // 有効なMinecraftトークンがあるか
   bool get isAuthenticated => activeAccount?.hasValidMinecraftToken ?? false;
 
-  // 状態をコピーして新しいインスタンスを作成
   AuthenticationState copyWith({
-    List<Account>? accounts,
-    String? activeAccountId,
+    Map<String, Account>? accounts,
+    String? activeMicrosoftAccountId,
     bool? isInitialized,
+    bool? isRefreshing,
   }) {
     return AuthenticationState(
       accounts: accounts ?? this.accounts,
-      activeAccountId: activeAccountId ?? this.activeAccountId,
+      activeMicrosoftAccountId:
+          activeMicrosoftAccountId ?? this.activeMicrosoftAccountId,
       isInitialized: isInitialized ?? this.isInitialized,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 }
 
 class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
   static const String _accountsKey = 'minecraft_accounts';
-  static const String _activeAccountIdKey = 'active_account_id';
+  static const String _activeAccountKey = 'active_account';
 
   final AuthenticationService _authService = AuthenticationService();
 
@@ -63,144 +74,270 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     _init();
   }
 
-  // 初期化処理
   Future<void> _init() async {
     await _loadAccounts();
+
+    final activeMicrosoftAccountId = await _getActiveAccountId();
+    if (activeMicrosoftAccountId != null) {
+      final account = state.accounts[activeMicrosoftAccountId];
+      if (account != null && account.hasRefreshToken) {
+        debugPrint(
+          'アクティブなMicrosoftアカウントIDからリフレッシュトークンを復元: $activeMicrosoftAccountId',
+        );
+        try {
+          if (state.activeAccount == null) {
+            await _loginWithMicrosoftAccountId(
+              activeMicrosoftAccountId,
+              account.microsoftRefreshToken!,
+            );
+          }
+        } catch (e) {
+          debugPrint('リフレッシュトークンを使用したサインイン中にエラー: $e');
+        }
+      }
+    }
+
     state = state.copyWith(isInitialized: true);
   }
 
-  // アカウントリストを読み込む
   Future<void> _loadAccounts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final accountsJson = prefs.getString(_accountsKey);
-      final activeId = prefs.getString(_activeAccountIdKey);
+      final activeId = prefs.getString(_activeAccountKey);
 
-      List<Account> accounts = [];
+      Map<String, Account> accounts = {};
       if (accountsJson != null) {
-        final List<dynamic> decoded = jsonDecode(accountsJson);
-        accounts = decoded.map((json) => Account.fromJson(json)).toList();
+        final Map<String, dynamic> decoded = jsonDecode(accountsJson);
+        decoded.forEach((key, value) {
+          accounts[key] = Account.fromJson(value);
+        });
       }
 
-      String? activeAccountId = activeId;
+      String? activeMicrosoftAccountId = activeId;
 
-      // アクティブなアカウントの設定
-      if (activeAccountId == null && accounts.isNotEmpty) {
-        // アクティブなアカウントが設定されていない場合、最初のアカウントをアクティブにする
-        activeAccountId = accounts.first.id;
-        await _saveActiveAccountId(activeAccountId);
+      if (activeMicrosoftAccountId == null && accounts.isNotEmpty) {
+        activeMicrosoftAccountId = accounts.keys.first;
+        await _saveActiveAccountId(activeMicrosoftAccountId);
       }
 
       state = state.copyWith(
         accounts: accounts,
-        activeAccountId: activeAccountId,
+        activeMicrosoftAccountId: activeMicrosoftAccountId,
       );
     } catch (e) {
       debugPrint('アカウント読み込みエラー: $e');
-      state = state.copyWith(accounts: [], activeAccountId: null);
+      state = state.copyWith(accounts: {}, activeMicrosoftAccountId: null);
     }
   }
 
-  // アカウントリストを保存
   Future<void> _saveAccounts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final accountsJson = jsonEncode(
-        state.accounts.map((acc) => acc.toJson()).toList(),
-      );
+      Map<String, dynamic> accountsMap = {};
+      state.accounts.forEach((key, account) {
+        accountsMap[key] = account.toJson();
+      });
+      final accountsJson = jsonEncode(accountsMap);
       await prefs.setString(_accountsKey, accountsJson);
     } catch (e) {
       debugPrint('アカウント保存エラー: $e');
     }
   }
 
-  // アクティブなアカウントIDを保存
-  Future<void> _saveActiveAccountId(String? activeId) async {
+  Future<void> _saveActiveAccountId(String? microsoftAccountId) async {
     try {
-      if (activeId != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_activeAccountIdKey, activeId);
+      final prefs = await SharedPreferences.getInstance();
+      if (microsoftAccountId != null) {
+        await prefs.setString(_activeAccountKey, microsoftAccountId);
+      } else {
+        await prefs.remove(_activeAccountKey);
       }
     } catch (e) {
       debugPrint('アクティブアカウントID保存エラー: $e');
     }
   }
 
-  // アカウントを更新
-  Future<void> _updateAccount(Account account) async {
-    final index = state.accounts.indexWhere((a) => a.id == account.id);
-    if (index >= 0) {
-      final updatedAccounts = [...state.accounts];
-      updatedAccounts[index] = account;
+  Future<String?> _getActiveAccountId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_activeAccountKey);
+    } catch (e) {
+      debugPrint('アクティブアカウントID取得エラー: $e');
+    }
+    return null;
+  }
+
+  Future<void> _updateAccount(
+    String microsoftAccountId,
+    Account account,
+  ) async {
+    if (state.accounts.containsKey(microsoftAccountId)) {
+      final updatedAccounts = Map<String, Account>.from(state.accounts);
+      updatedAccounts[microsoftAccountId] = account;
       state = state.copyWith(accounts: updatedAccounts);
       await _saveAccounts();
     }
   }
 
-  // アカウントを追加
-  Future<void> _addAccount(Account account) async {
-    final updatedAccounts = [...state.accounts, account];
+  Future<void> _addAccount(String microsoftAccountId, Account account) async {
+    final updatedAccounts = Map<String, Account>.from(state.accounts);
+    updatedAccounts[microsoftAccountId] = account;
     state = state.copyWith(accounts: updatedAccounts);
     await _saveAccounts();
   }
 
-  // アカウントを削除
-  Future<void> removeAccount(String accountId) async {
-    final updatedAccounts =
-        state.accounts.where((account) => account.id != accountId).toList();
+  Future<void> removeAccount(String microsoftAccountId) async {
+    final updatedAccounts = Map<String, Account>.from(state.accounts);
+    updatedAccounts.remove(microsoftAccountId);
 
-    // 削除したアカウントがアクティブだった場合、新しいアクティブアカウントを設定
-    String? newActiveId = state.activeAccountId;
-    if (state.activeAccountId == accountId) {
+    String? newActiveId = state.activeMicrosoftAccountId;
+    if (state.activeMicrosoftAccountId == microsoftAccountId) {
       newActiveId =
-          updatedAccounts.isNotEmpty ? updatedAccounts.first.id : null;
+          updatedAccounts.isNotEmpty ? updatedAccounts.keys.first : null;
       await _saveActiveAccountId(newActiveId);
     }
 
     state = state.copyWith(
       accounts: updatedAccounts,
-      activeAccountId: newActiveId,
+      activeMicrosoftAccountId: newActiveId,
     );
 
     await _saveAccounts();
   }
 
-  // アカウント切り替え
-  Future<void> setActiveAccount(String accountId) async {
-    if (state.accounts.any((account) => account.id == accountId)) {
-      state = state.copyWith(activeAccountId: accountId);
-      await _saveActiveAccountId(accountId);
+  Future<bool> setActiveAccount(String? microsoftAccountId) async {
+    if (microsoftAccountId == null) {
+      state = state.copyWith(activeMicrosoftAccountId: null);
+      await _saveActiveAccountId(null);
+      return false;
+    }
+
+    if (state.accounts.containsKey(microsoftAccountId)) {
+      state = state.copyWith(activeMicrosoftAccountId: microsoftAccountId);
+      await _saveActiveAccountId(microsoftAccountId);
+
+      final account = state.accounts[microsoftAccountId];
+
+      bool isTokenValid = account?.hasValidMinecraftToken ?? false;
+
+      if (!isTokenValid && account?.hasRefreshToken == true) {
+        debugPrint('新しくアクティブになったアカウントのトークンを更新します');
+        final profile = await refreshActiveAccount();
+        isTokenValid = profile != null;
+      }
+
+      return isTokenValid;
+    }
+    return false;
+  }
+
+  // アクティブなアカウントをクリアするメソッド
+  Future<void> clearActiveAccount() async {
+    // オフラインモードに設定するため、明示的にnullに設定
+    state = state.copyWith(activeMicrosoftAccountId: null);
+    await _saveActiveAccountId(null);
+
+    // 状態が確実に更新されるように再度状態を確認
+    if (state.activeMicrosoftAccountId != null) {
+      state = AuthenticationState(
+        accounts: state.accounts,
+        activeMicrosoftAccountId: null,
+        isInitialized: state.isInitialized,
+        isRefreshing: state.isRefreshing,
+      );
+    }
+
+    debugPrint('アクティブアカウントがクリアされました（オフラインモード）');
+  }
+
+  // 最後にアクティブだったアカウントを復元する
+  Future<Account?> restoreLastActiveAccount() async {
+    // アカウントが存在しない場合は何もしない
+    if (state.accounts.isEmpty) {
+      debugPrint('復元するアカウントがありません');
+      return null;
+    }
+
+    // 前回のアクティブアカウントIDを取得
+    final lastUsedAccountId = await _getActiveAccountId();
+
+    // 保存されたIDがある場合はそれを、なければ最初のアカウントを使用
+    final accountId = lastUsedAccountId ?? state.accounts.keys.first;
+    debugPrint('アカウント復元: $accountId');
+
+    // アカウントをアクティブに設定
+    final isValid = await setActiveAccount(accountId);
+    if (isValid) {
+      debugPrint(
+        '有効なトークンでアカウントを復元しました: ${state.activeAccount?.profile?.name ?? "Unknown"}',
+      );
+    } else {
+      debugPrint(
+        'トークンが無効なアカウントを復元しました: ${state.activeAccount?.profile?.name ?? "Unknown"}',
+      );
+    }
+
+    return state.activeAccount;
+  }
+
+  Future<Account?> loginWithActiveAccount() async {
+    if (state.activeAccount == null) return null;
+
+    try {
+      debugPrint(
+        'アクティブアカウントでログイン中: ${state.activeAccount?.profile?.name ?? "Unknown"}',
+      );
+      final account = state.activeAccount!;
+
+      if (account.hasValidMinecraftToken && account.hasValidXboxToken) {
+        debugPrint('有効なトークンがあります、そのまま使用します');
+        return account;
+      }
+
+      if (account.hasRefreshToken) {
+        debugPrint('トークンを更新します');
+        final profile = await refreshActiveAccount();
+        if (profile != null) {
+          debugPrint('トークン更新成功: ${profile.name}');
+          return state.activeAccount;
+        } else {
+          debugPrint('トークン更新失敗');
+        }
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('アクティブアカウントでのログイン中にエラー: $e');
+      return null;
     }
   }
 
-  // 新しい認証フローを開始
   Future<DeviceCodeResponse> startAuthFlow() async {
     return await _authService.getMicrosoftDeviceCode();
   }
 
-  // Microsoft認証からMinecraftプロファイル取得までの共通処理
   Future<_AuthenticationData> _processAuthentication({
     String? deviceCode,
     String? refreshToken,
   }) async {
     try {
-      // Microsoft認証トークン取得
       final msTokenResponse =
           deviceCode != null
               ? await _authService.pollForMicrosoftToken(deviceCode)
               : await _authService.refreshMicrosoftToken(refreshToken!);
 
-      // Xbox Live認証
       final xboxLiveResponse = await _authService.authenticateWithXboxLive(
         msTokenResponse.accessToken,
       );
 
-      // XSTSトークン取得
       final xstsResponse = await _authService.getXstsToken(
         xboxLiveResponse.token,
       );
 
-      // Minecraftデータ取得
+      final microsoftAccountId = xboxLiveResponse.displayClaims.xui[0].uhs;
+      debugPrint('MicrosoftアカウントID (UHS) を取得: $microsoftAccountId');
+
       final minecraftData = await _getMinecraftData(
         xstsResponse.displayClaims.xui[0].uhs,
         xstsResponse.token,
@@ -211,6 +348,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         xboxToken: xboxLiveResponse.token,
         xboxTokenExpiry: DateTime.now().add(const Duration(hours: 24)),
         minecraftData: minecraftData,
+        microsoftAccountId: microsoftAccountId,
       );
     } catch (e) {
       debugPrint('認証処理エラー: $e');
@@ -218,15 +356,14 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     }
   }
 
-  // 認証フローをポーリングして完了
   Future<MinecraftProfile?> completeAuthFlow(String deviceCode) async {
     try {
-      // 認証処理
       final authData = await _processAuthentication(deviceCode: deviceCode);
 
-      // 新しいアカウント作成
+      await _saveActiveAccountId(authData.microsoftAccountId);
+
       final newAccount = Account(
-        id: const Uuid().v4(),
+        id: authData.microsoftAccountId,
         profile: authData.minecraftData.profile,
         microsoftRefreshToken: authData.microsoftRefreshToken,
         xboxToken: authData.xboxToken,
@@ -236,7 +373,11 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         isActive: true,
       );
 
-      await _handleAccountUpdate(newAccount, authData.minecraftData.profile);
+      await _handleAccountUpdate(
+        authData.microsoftAccountId,
+        newAccount,
+        authData.minecraftData.profile,
+      );
 
       return authData.minecraftData.profile;
     } catch (e) {
@@ -245,14 +386,13 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     }
   }
 
-  // Minecraftデータ(トークン, プロファイル)を取得する共通メソッド
   Future<_MinecraftData> _getMinecraftData(String uhs, String xstsToken) async {
     String? accessToken;
     DateTime? expiresAt;
     MinecraftProfile? profile;
 
     try {
-      // Minecraftアクセストークン取得
+      debugPrint('Minecraftアクセストークン取得中...');
       final minecraftToken = await _authService.getMinecraftAccessToken(
         uhs,
         xstsToken,
@@ -262,18 +402,20 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       expiresAt = DateTime.now().add(
         Duration(seconds: minecraftToken.expiresIn),
       );
+      debugPrint('Minecraftアクセストークン取得成功');
 
       try {
-        // 所有権チェック
+        debugPrint('Minecraft所有権チェック中...');
         final hasGame = await _authService.checkMinecraftOwnership(
           minecraftToken.accessToken,
         );
 
         if (hasGame) {
-          // プロファイル取得
+          debugPrint('Minecraft所有権確認済み、プロファイル取得中...');
           profile = await _authService.getMinecraftProfile(
             minecraftToken.accessToken,
           );
+          debugPrint('Minecraftプロファイル取得成功: ${profile.name}');
         } else {
           debugPrint('Minecraft: Java Editionの所有権がありません');
         }
@@ -291,58 +433,83 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     );
   }
 
-  // アカウント更新と保存を処理する共通メソッド
   Future<void> _handleAccountUpdate(
+    String microsoftAccountId,
     Account newAccount,
     MinecraftProfile? profile,
   ) async {
-    int existingAccountIndex = -1;
-    if (profile != null) {
-      existingAccountIndex = state.accounts.indexWhere(
-        (acc) => acc.profile?.id == profile.id,
-      );
-    }
+    final updatedAccounts = Map<String, Account>.from(state.accounts);
+    updatedAccounts[microsoftAccountId] = newAccount;
 
-    if (existingAccountIndex >= 0) {
-      // 既存アカウント更新
-      final updatedAccounts = [...state.accounts];
-      updatedAccounts[existingAccountIndex] = newAccount;
-      state = state.copyWith(
-        accounts: updatedAccounts,
-        activeAccountId: newAccount.id,
-      );
-    } else {
-      // 新規アカウント追加
-      state = state.copyWith(
-        accounts: [...state.accounts, newAccount],
-        activeAccountId: newAccount.id,
-      );
-    }
+    state = state.copyWith(
+      accounts: updatedAccounts,
+      activeMicrosoftAccountId: microsoftAccountId,
+    );
 
-    await _saveActiveAccountId(newAccount.id);
+    await _saveActiveAccountId(microsoftAccountId);
     await _saveAccounts();
   }
 
-  // アクティブアカウントの認証状態を更新
   Future<MinecraftProfile?> refreshActiveAccount() async {
-    if (state.activeAccount == null) return null;
+    if (state.activeAccount == null || state.activeMicrosoftAccountId == null)
+      return null;
 
     try {
-      final account = state.activeAccount!;
+      state = state.copyWith(isRefreshing: true);
 
-      // リフレッシュトークンがない場合は更新不可
+      final account = state.activeAccount!;
+      final existingProfile = account.profile;
+      final microsoftAccountId = state.activeMicrosoftAccountId!;
+
+      debugPrint('アカウント更新開始: ${existingProfile?.name ?? "Unknown"}');
+
       if (account.microsoftRefreshToken == null) {
-        return null;
+        debugPrint('リフレッシュトークンがありません');
+        state = state.copyWith(isRefreshing: false);
+        return existingProfile;
       }
 
-      // 認証処理
+      debugPrint('認証プロセス開始...');
       final authData = await _processAuthentication(
         refreshToken: account.microsoftRefreshToken!,
       );
 
-      // アカウント更新
+      if (authData.minecraftData.profile == null) {
+        debugPrint('警告: 認証プロセスでMinecraftプロファイルが取得できませんでした');
+        debugPrint('アクセストークン存在: ${authData.minecraftData.accessToken != null}');
+        debugPrint('既存プロファイル存在: ${existingProfile != null}');
+
+        if (authData.minecraftData.accessToken != null) {
+          debugPrint('直接プロファイル取得を試みます...');
+          try {
+            final profile = await _authService.getMinecraftProfile(
+              authData.minecraftData.accessToken!,
+            );
+
+            debugPrint('プロファイル直接取得成功: ${profile.name}');
+            final updatedAccount = account.copyWith(
+              profile: profile,
+              microsoftRefreshToken: authData.microsoftRefreshToken,
+              xboxToken: authData.xboxToken,
+              xboxTokenExpiry: authData.xboxTokenExpiry,
+              minecraftAccessToken: authData.minecraftData.accessToken,
+              minecraftTokenExpiry: authData.minecraftData.expiresAt,
+            );
+
+            await _updateAccount(microsoftAccountId, updatedAccount);
+            state = state.copyWith(isRefreshing: false);
+            debugPrint('アカウント更新成功 (直接プロファイル取得): ${profile.name}');
+            return profile;
+          } catch (e) {
+            debugPrint('直接プロファイル取得エラー: $e');
+          }
+        }
+      }
+
+      final profileToUse = authData.minecraftData.profile ?? existingProfile;
+      debugPrint('アカウント情報更新中... 使用するプロファイル: ${profileToUse?.name ?? "不明"}');
       final updatedAccount = account.copyWith(
-        profile: authData.minecraftData.profile ?? account.profile,
+        profile: profileToUse,
         microsoftRefreshToken: authData.microsoftRefreshToken,
         xboxToken: authData.xboxToken,
         xboxTokenExpiry: authData.xboxTokenExpiry,
@@ -350,31 +517,73 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         minecraftTokenExpiry: authData.minecraftData.expiresAt,
       );
 
-      await _updateAccount(updatedAccount);
+      await _updateAccount(microsoftAccountId, updatedAccount);
+      state = state.copyWith(isRefreshing: false);
 
-      return authData.minecraftData.profile;
+      if (authData.minecraftData.profile != null) {
+        debugPrint('アカウント更新成功: ${authData.minecraftData.profile!.name}');
+      } else if (profileToUse != null) {
+        debugPrint('アカウント更新完了 (既存プロファイル使用: ${profileToUse.name})');
+      } else {
+        debugPrint('アカウント更新完了 (プロファイル情報なし)');
+      }
+
+      return profileToUse;
     } catch (e) {
       debugPrint('アカウント更新エラー: $e');
+      state = state.copyWith(isRefreshing: false);
+
+      return state.activeAccount?.profile;
+    }
+  }
+
+  Future<Account?> silentLogin() async {
+    try {
+      debugPrint('サイレントログインを実行中...');
+      final profile = await _authService.silentLogin();
+
+      if (profile == null) {
+        debugPrint('サイレントログイン失敗: プロファイルが取得できませんでした');
+        return null;
+      }
+
+      final tempMicrosoftAccountId = const Uuid().v4();
+
+      final account = Account(
+        id: tempMicrosoftAccountId,
+        profile: profile,
+        minecraftAccessToken: await _authService.getMinecraftToken(),
+        xboxToken: await _authService.getXboxToken(),
+        minecraftTokenExpiry: DateTime.now().add(const Duration(hours: 24)),
+        xboxTokenExpiry: DateTime.now().add(const Duration(hours: 24)),
+        isActive: true,
+      );
+
+      await _addAccount(tempMicrosoftAccountId, account);
+      await _saveActiveAccountId(tempMicrosoftAccountId);
+
+      debugPrint('サイレントログイン成功: ${profile.name}');
+      return account;
+    } catch (e) {
+      debugPrint('サイレントログイン処理中にエラー: $e');
       return null;
     }
   }
 
-  // アクティブアカウントのMinecraftアクセストークンを取得
   Future<String?> getMinecraftToken() async {
     if (state.activeAccount == null) return null;
 
     try {
       final account = state.activeAccount!;
 
-      // 有効なトークンがあればそれを返す
       if (account.hasValidMinecraftToken) {
         return account.minecraftAccessToken;
       }
 
-      // トークンが無効な場合は更新を試みる
       if (account.hasRefreshToken) {
-        final profile = await refreshActiveAccount();
-        if (profile != null) {
+        await refreshActiveAccount();
+
+        if (state.activeAccount?.hasValidMinecraftToken ?? false) {
           return state.activeAccount?.minecraftAccessToken;
         }
       }
@@ -385,22 +594,20 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     return null;
   }
 
-  // アクティブアカウントのXboxトークンを取得
   Future<String?> getXboxToken() async {
     if (state.activeAccount == null) return null;
 
     try {
       final account = state.activeAccount!;
 
-      // 有効なトークンがあればそれを返す
       if (account.hasValidXboxToken) {
         return account.xboxToken;
       }
 
-      // トークンが無効な場合は更新を試みる
       if (account.hasRefreshToken) {
-        final profile = await refreshActiveAccount();
-        if (profile != null) {
+        await refreshActiveAccount();
+
+        if (state.activeAccount?.hasValidXboxToken ?? false) {
           return state.activeAccount?.xboxToken;
         }
       }
@@ -411,15 +618,86 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     return null;
   }
 
-  // ログアウト処理（アクティブアカウントを削除）
   Future<void> logout() async {
-    if (state.activeAccountId != null) {
-      await removeAccount(state.activeAccountId!);
+    if (state.activeMicrosoftAccountId != null) {
+      await removeAccount(state.activeMicrosoftAccountId!);
+    }
+  }
+
+  Future<String?> getAccessTokenForService() async {
+    if (state.activeAccount == null) return null;
+
+    try {
+      final account = state.activeAccount!;
+
+      if (account.hasValidMinecraftToken) {
+        debugPrint(
+          'アクティブなアカウントの有効なトークンを返します: ${account.profile?.name ?? "Unknown"}',
+        );
+        return account.minecraftAccessToken;
+      }
+
+      if (account.hasRefreshToken) {
+        debugPrint('トークンを更新します');
+        await refreshActiveAccount();
+
+        if (state.activeAccount?.hasValidMinecraftToken ?? false) {
+          debugPrint(
+            '更新されたトークンを返します: ${state.activeAccount?.profile?.name ?? "Unknown"}',
+          );
+          return state.activeAccount?.minecraftAccessToken;
+        }
+
+        debugPrint('トークン更新後も有効なトークンがありません');
+      }
+    } catch (e) {
+      debugPrint('アクセストークン取得エラー: $e');
+    }
+
+    return null;
+  }
+
+  Future<MinecraftProfile?> _loginWithMicrosoftAccountId(
+    String microsoftAccountId,
+    String refreshToken,
+  ) async {
+    try {
+      debugPrint('MicrosoftアカウントID: $microsoftAccountId でサインイン中...');
+      final authData = await _processAuthentication(refreshToken: refreshToken);
+
+      if (authData.minecraftData.profile == null) {
+        debugPrint('プロファイル情報が取得できませんでした');
+        return null;
+      }
+
+      final newAccount = Account(
+        id: microsoftAccountId,
+        profile: authData.minecraftData.profile,
+        microsoftRefreshToken: authData.microsoftRefreshToken,
+        xboxToken: authData.xboxToken,
+        xboxTokenExpiry: authData.xboxTokenExpiry,
+        minecraftAccessToken: authData.minecraftData.accessToken,
+        minecraftTokenExpiry: authData.minecraftData.expiresAt,
+        isActive: true,
+      );
+
+      await _handleAccountUpdate(
+        microsoftAccountId,
+        newAccount,
+        authData.minecraftData.profile,
+      );
+
+      debugPrint(
+        'MicrosoftアカウントIDからのサインイン成功: ${authData.minecraftData.profile?.name}',
+      );
+      return authData.minecraftData.profile;
+    } catch (e) {
+      debugPrint('MicrosoftアカウントIDからのサインインエラー: $e');
+      return null;
     }
   }
 }
 
-// Minecraftデータを保持する内部クラス
 class _MinecraftData {
   final String? accessToken;
   final DateTime? expiresAt;
@@ -428,17 +706,18 @@ class _MinecraftData {
   _MinecraftData({this.accessToken, this.expiresAt, this.profile});
 }
 
-// 認証データを保持する内部クラス
 class _AuthenticationData {
   final String microsoftRefreshToken;
   final String xboxToken;
   final DateTime xboxTokenExpiry;
   final _MinecraftData minecraftData;
+  final String microsoftAccountId;
 
   _AuthenticationData({
     required this.microsoftRefreshToken,
     required this.xboxToken,
     required this.xboxTokenExpiry,
     required this.minecraftData,
+    required this.microsoftAccountId,
   });
 }
