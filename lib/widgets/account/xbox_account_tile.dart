@@ -303,8 +303,11 @@ class XboxAccountButton extends ConsumerWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  ...authState.accounts.map((account) {
-                    final isActive = account.id == authState.activeAccountId;
+                  ...authState.accounts.entries.map((entry) {
+                    final account = entry.value;
+                    final accountId = entry.key;
+                    final isActive =
+                        accountId == authState.activeMicrosoftAccountId;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: XboxAccountTile(
@@ -315,7 +318,7 @@ class XboxAccountButton extends ConsumerWidget {
                                 ? null
                                 : () async {
                                   await authNotifier.setActiveAccount(
-                                    account.id,
+                                    accountId,
                                   );
                                   if (onAccountChanged != null) {
                                     onAccountChanged!();
@@ -334,7 +337,7 @@ class XboxAccountButton extends ConsumerWidget {
                               Navigator.pop(context);
                             }
                           } else {
-                            await authNotifier.setActiveAccount(account.id);
+                            await authNotifier.setActiveAccount(accountId);
                             await authNotifier.refreshActiveAccount();
                             if (onAccountChanged != null) {
                               onAccountChanged!();
@@ -350,7 +353,7 @@ class XboxAccountButton extends ConsumerWidget {
                             account,
                           );
                           if (confirmed) {
-                            await authNotifier.removeAccount(account.id);
+                            await authNotifier.removeAccount(accountId);
                             if (onAccountChanged != null) {
                               onAccountChanged!();
                             }
@@ -361,7 +364,7 @@ class XboxAccountButton extends ConsumerWidget {
                         },
                       ),
                     );
-                  }),
+                  }).toList(),
 
                   // 新規アカウント追加ボタン
                   const SizedBox(height: 8),
