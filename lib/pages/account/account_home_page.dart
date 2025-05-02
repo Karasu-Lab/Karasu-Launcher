@@ -31,6 +31,55 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
     super.dispose();
   }
 
+  Future<void> _switchAccount(String accountId) async {
+    if (_switchingAccountId != null) return;
+
+    setState(() {
+      _switchingAccountId = accountId;
+    });
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('アカウントを切り替えています...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+
+    final isTokenValid = await ref
+        .read(authenticationProvider.notifier)
+        .setActiveAccount(accountId);
+
+    setState(() {
+      _switchingAccountId = null;
+    });
+
+    if (context.mounted) {
+      final accountName =
+          ref.read(authenticationProvider).accounts[accountId]?.profile?.name ??
+          "Unknown";
+      if (isTokenValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$accountNameをアクティブアカウントに設定しました'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '$accountNameをアクティブアカウントに設定しましたが、トークンの検証に失敗しました。「トークンを更新」ボタンをお試しください。',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authenticationProvider);
@@ -44,6 +93,14 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
         title: const Text('アカウント管理'),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add),
+            tooltip: '新規アカウントを追加',
+            onPressed: () => context.go('/accounts/sign-in'),
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -124,13 +181,6 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                       children: [
                         SizedBox(height: 4),
                         Text(
-                          'アクティブなアカウント',
-                          style: TextStyle(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
                           'デモモードでMinecraftを起動します',
                           style: TextStyle(color: Colors.grey),
                         ),
@@ -139,8 +189,18 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                   ),
                 ),
               Expanded(
-                child: ListView.builder(
+                child: ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
                   itemCount: accounts.entries.length,
+                  onReorder: (oldIndex, newIndex) async {
+                    final success = await ref
+                        .read(authenticationProvider.notifier)
+                        .swapAccountIndexes(oldIndex, newIndex);
+
+                    if (success && context.mounted) {
+                      debugPrint("アカウントの順序を変更しました: $oldIndex → $newIndex");
+                    }
+                  },
                   itemBuilder: (context, index) {
                     final entry = accounts.entries.elementAt(index);
                     final account = entry.value;
@@ -148,6 +208,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                         activeAccount != null && account.id == activeAccount.id;
 
                     return Card(
+                      key: ValueKey(account.id),
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: isActive ? 4 : 1,
                       shape: RoundedRectangleBorder(
@@ -169,153 +230,304 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                                 ? const BorderSide(color: Colors.blue, width: 2)
                                 : BorderSide.none,
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        leading:
-                            account.profile?.skinUrl != null
-                                ? SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: MinecraftFace.network(
-                                    account.profile!.skinUrl!,
-                                  ),
-                                )
-                                : const CircleAvatar(child: Icon(Icons.person)),
-                        title: Text(
-                          account.profile?.name ?? 'Unknown',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                      child: MouseRegion(
+                        cursor:
+                            isActive || _switchingAccountId != null
+                                ? SystemMouseCursors.basic
+                                : SystemMouseCursors.click,
+                        child: ListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text(
-                              isActive ? 'アクティブなアカウント' : '',
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              account.hasValidMinecraftToken
-                                  ? '認証済み'
-                                  : 'トークン期限切れ',
-                              style: TextStyle(
-                                color:
-                                    account.hasValidMinecraftToken
-                                        ? Colors.green
-                                        : Colors.red,
-                              ),
-                            ),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (!isActive)
-                              IconButton(
-                                icon: const Icon(Icons.check_circle_outline),
-                                tooltip: 'アクティブにする',
-                                onPressed: () async {
-                                  setState(() {
-                                    _switchingAccountId = account.id;
-                                  });
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          onTap:
+                              isActive || _switchingAccountId != null
+                                  ? null
+                                  : () async {
+                                    setState(() {
+                                      _switchingAccountId = account.id;
+                                    });
 
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('アカウントを切り替えています...'),
-                                        duration: Duration(seconds: 1),
-                                      ),
-                                    );
-                                  }
+                                    final isTokenValid = await ref
+                                        .read(authenticationProvider.notifier)
+                                        .setActiveAccount(account.id);
 
-                                  final isTokenValid = await ref
-                                      .read(authenticationProvider.notifier)
-                                      .setActiveAccount(account.id);
+                                    setState(() {
+                                      _switchingAccountId = null;
+                                    });
 
-                                  setState(() {
-                                    _switchingAccountId = null;
-                                  });
-
-                                  if (context.mounted) {
-                                    if (isTokenValid) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しました',
+                                    if (context.mounted) {
+                                      if (isTokenValid) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しました',
+                                            ),
+                                            backgroundColor: Colors.green,
                                           ),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しましたが、トークンの検証に失敗しました。「トークンを更新」ボタンをお試しください。',
-                                          ),
-                                          backgroundColor: Colors.orange,
-                                          duration: const Duration(seconds: 5),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                              ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                              ),
-                              tooltip: '削除',
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder:
-                                      (ctx) => AlertDialog(
-                                        title: const Text('アカウント削除'),
-                                        content: Text(
-                                          '${account.profile?.name ?? "Unknown"}のアカウントを削除しますか？',
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed:
-                                                () => Navigator.of(ctx).pop(),
-                                            child: const Text('キャンセル'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.of(ctx).pop();
-                                              ref
-                                                  .read(
-                                                    authenticationProvider
-                                                        .notifier,
-                                                  )
-                                                  .removeAccount(account.id);
-                                            },
-                                            child: const Text(
-                                              '削除',
-                                              style: TextStyle(
-                                                color: Colors.red,
-                                              ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しましたが、トークンの検証に失敗しました。「トークンを更新」ボタンをお試しください。',
+                                            ),
+                                            backgroundColor: Colors.orange,
+                                            duration: const Duration(
+                                              seconds: 5,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                );
-                              },
+                                        );
+                                      }
+                                    }
+                                  },
+                          leading: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ReorderableDragStartListener(
+                                index: index,
+                                child: const Icon(
+                                  Icons.drag_handle,
+                                  color: Colors.grey,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              account.profile?.skinUrl != null
+                                  ? SizedBox(
+                                    width: 32,
+                                    height: 32,
+                                    child: MinecraftFace.network(
+                                      account.profile!.skinUrl!,
+                                    ),
+                                  )
+                                  : const CircleAvatar(
+                                    child: Icon(Icons.person),
+                                  ),
+                            ],
+                          ),
+                          title: Text(
+                            account.profile?.name ?? 'Unknown',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(
+                                isActive ? 'アクティブなアカウント' : '',
+                                style: const TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                account.hasValidMinecraftToken
+                                    ? '認証済み'
+                                    : 'トークン期限切れ',
+                                style: TextStyle(
+                                  color:
+                                      account.hasValidMinecraftToken
+                                          ? Colors.green
+                                          : Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isActive == true)
+                                IconButton(
+                                  icon:
+                                      isRefreshing
+                                          ? const SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    Colors.blue,
+                                                  ),
+                                            ),
+                                          )
+                                          : const Icon(Icons.refresh),
+                                  tooltip: isRefreshing ? '更新中...' : 'トークンを更新',
+                                  onPressed:
+                                      isRefreshing
+                                          ? null
+                                          : () async {
+                                            final profile =
+                                                await ref
+                                                    .read(
+                                                      authenticationProvider
+                                                          .notifier,
+                                                    )
+                                                    .refreshActiveAccount();
+
+                                            if (context.mounted) {
+                                              if (profile != null) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      '${profile.name}のトークンを更新しました',
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.green,
+                                                  ),
+                                                );
+                                              } else {
+                                                final account =
+                                                    ref
+                                                        .read(
+                                                          authenticationProvider,
+                                                        )
+                                                        .activeAccount;
+                                                if (account != null &&
+                                                    account
+                                                        .hasValidMinecraftToken) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'トークンを更新しました (${account.profile?.name ?? "Unknown"})',
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.green,
+                                                    ),
+                                                  );
+                                                } else {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'トークンの更新に失敗しました',
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            }
+                                          },
+                                ),
+                              if (isActive == false)
+                                IconButton(
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  tooltip: 'アクティブにする',
+
+                                  onPressed:
+                                      _switchingAccountId != null
+                                          ? null
+                                          : () async {
+                                            setState(() {
+                                              _switchingAccountId = account.id;
+                                            });
+
+                                            final isTokenValid = await ref
+                                                .read(
+                                                  authenticationProvider
+                                                      .notifier,
+                                                )
+                                                .setActiveAccount(account.id);
+
+                                            setState(() {
+                                              _switchingAccountId = null;
+                                            });
+
+                                            if (context.mounted) {
+                                              if (isTokenValid) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しました',
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.green,
+                                                  ),
+                                                );
+                                              } else {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しましたが、トークンの検証に失敗しました。「トークンを更新」ボタンをお試しください。',
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.orange,
+                                                    duration: const Duration(
+                                                      seconds: 5,
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          },
+                                ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                ),
+                                tooltip: '削除',
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder:
+                                        (ctx) => AlertDialog(
+                                          title: const Text('アカウント削除'),
+                                          content: Text(
+                                            '${account.profile?.name ?? "Unknown"}のアカウントを削除しますか？',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.of(ctx).pop(),
+                                              child: const Text('キャンセル'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(ctx).pop();
+                                                ref
+                                                    .read(
+                                                      authenticationProvider
+                                                          .notifier,
+                                                    )
+                                                    .removeAccount(account.id);
+                                              },
+                                              child: const Text(
+                                                '削除',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -324,23 +536,9 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
               ),
             ],
             const SizedBox(height: 20),
-
             Center(
               child: Column(
                 children: [
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(220, 45),
-                      backgroundColor: Theme.of(context).primaryColor,
-                    ),
-                    icon: const Icon(Icons.add),
-                    label: const Text(
-                      '新規アカウント追加',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    onPressed: () => context.go('/accounts/sign-in'),
-                  ),
-                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(220, 45),
@@ -407,100 +605,21 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                       }
                     },
                   ),
-                  const SizedBox(height: 12),
-                  if (authState.isAuthenticated) ...[
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(220, 45),
-                      ),
-                      icon:
-                          isRefreshing
-                              ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.blue,
-                                  ),
-                                ),
-                              )
-                              : const Icon(Icons.refresh),
-                      label: Text(
-                        isRefreshing ? '更新中...' : 'トークンを更新',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      onPressed:
-                          isRefreshing
-                              ? null
-                              : () async {
-                                final profile =
-                                    await ref
-                                        .read(authenticationProvider.notifier)
-                                        .refreshActiveAccount();
-
-                                if (context.mounted) {
-                                  if (profile != null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '${profile.name}のトークンを更新しました',
-                                        ),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  } else {
-                                    final account =
-                                        ref
-                                            .read(authenticationProvider)
-                                            .activeAccount;
-                                    if (account != null &&
-                                        account.hasValidMinecraftToken) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'トークンを更新しました (${account.profile?.name ?? "Unknown"})',
-                                          ),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('トークンの更新に失敗しました'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  }
-                                }
-                              },
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(220, 45),
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                      ),
-                      icon: const Icon(Icons.logout),
-                      label: const Text(
-                        'ログアウト',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      onPressed: () => context.go('/accounts/sign-out'),
-                    ),
-                  ],
                 ],
               ),
             ),
           ],
         ),
       ),
+      floatingActionButton:
+          authState.isAuthenticated
+              ? FloatingActionButton.extended(
+                icon: const Icon(Icons.logout),
+                label: const Text('ログアウト'),
+                backgroundColor: Colors.red,
+                onPressed: () => context.go('/accounts/sign-out'),
+              )
+              : null,
     );
   }
 }

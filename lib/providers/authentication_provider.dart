@@ -34,14 +34,12 @@ class AuthenticationState {
 
   Account? get activeAccount {
     try {
-      // activeMicrosoftAccountIdがnullの場合は常にnullを返す（オフラインモード）
       if (activeMicrosoftAccountId == null) {
         return null;
       }
-      // アカウントの取得を試みる
+
       return accounts[activeMicrosoftAccountId];
     } catch (_) {
-      // 例外が発生した場合（通常は起きないが念のため）
       return null;
     }
   }
@@ -232,13 +230,10 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     return false;
   }
 
-  // アクティブなアカウントをクリアするメソッド
   Future<void> clearActiveAccount() async {
-    // オフラインモードに設定するため、明示的にnullに設定
     state = state.copyWith(activeMicrosoftAccountId: null);
     await _saveActiveAccountId(null);
 
-    // 状態が確実に更新されるように再度状態を確認
     if (state.activeMicrosoftAccountId != null) {
       state = AuthenticationState(
         accounts: state.accounts,
@@ -251,22 +246,17 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     debugPrint('アクティブアカウントがクリアされました（オフラインモード）');
   }
 
-  // 最後にアクティブだったアカウントを復元する
   Future<Account?> restoreLastActiveAccount() async {
-    // アカウントが存在しない場合は何もしない
     if (state.accounts.isEmpty) {
       debugPrint('復元するアカウントがありません');
       return null;
     }
 
-    // 前回のアクティブアカウントIDを取得
     final lastUsedAccountId = await _getActiveAccountId();
 
-    // 保存されたIDがある場合はそれを、なければ最初のアカウントを使用
     final accountId = lastUsedAccountId ?? state.accounts.keys.first;
     debugPrint('アカウント復元: $accountId');
 
-    // アカウントをアクティブに設定
     final isValid = await setActiveAccount(accountId);
     if (isValid) {
       debugPrint(
@@ -450,9 +440,54 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     await _saveAccounts();
   }
 
+  Future<bool> swapAccountIndexes(int fromIndex, int toIndex) async {
+    try {
+      if (fromIndex < 0 || fromIndex >= state.accounts.length) {
+        debugPrint(
+          'fromIndexが範囲外です: from=$fromIndex, length=${state.accounts.length}',
+        );
+        return false;
+      }
+
+      int adjustedToIndex = toIndex;
+      if (adjustedToIndex < 0) {
+        adjustedToIndex = 0;
+        debugPrint('toIndexが負の値のため0に調整しました');
+      } else if (adjustedToIndex > state.accounts.length) {
+        adjustedToIndex = state.accounts.length;
+        debugPrint('toIndexが範囲外のため、最後のアイテムの次(${state.accounts.length})に調整しました');
+      }
+
+      if (fromIndex == adjustedToIndex) {
+        return true;
+      }
+      final accountEntries = state.accounts.entries.toList();
+
+      final fromEntry = accountEntries[fromIndex];
+
+      accountEntries.removeAt(fromIndex);
+
+      accountEntries.insert(
+        adjustedToIndex > fromIndex ? adjustedToIndex - 1 : adjustedToIndex,
+        fromEntry,
+      );
+
+      final reorderedAccounts = Map<String, Account>.fromEntries(
+        accountEntries,
+      );
+
+      state = state.copyWith(accounts: reorderedAccounts);
+      await _saveAccounts();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<MinecraftProfile?> refreshActiveAccount() async {
-    if (state.activeAccount == null || state.activeMicrosoftAccountId == null)
+    if (state.activeAccount == null || state.activeMicrosoftAccountId == null) {
       return null;
+    }
 
     try {
       state = state.copyWith(isRefreshing: true);
