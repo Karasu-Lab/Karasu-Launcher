@@ -331,7 +331,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       );
 
       final microsoftAccountId = xboxLiveResponse.displayClaims.xui[0].uhs;
-      // XUIDを取得
+
       final xuid = xboxLiveResponse.displayClaims.xui[0].uhs;
       debugPrint('MicrosoftアカウントID (UHS) を取得: $microsoftAccountId');
       debugPrint('Xbox XUID を取得: $xuid');
@@ -347,7 +347,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         xboxTokenExpiry: DateTime.now().add(const Duration(hours: 24)),
         minecraftData: minecraftData,
         microsoftAccountId: microsoftAccountId,
-        xuid: xuid, // XUIDを追加
+        xuid: xuid,
       );
     } catch (e) {
       debugPrint('認証処理エラー: $e');
@@ -355,14 +355,19 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     }
   }
 
-  Future<MinecraftProfile?> completeAuthFlow(String deviceCode) async {
-    try {
-      final authData = await _processAuthentication(deviceCode: deviceCode);
+  Account _createOrUpdateAccount(
+    String microsoftAccountId,
+    _AuthenticationData authData,
+    Account? existingAccount,
+  ) {
+    final minecraftProfile = authData.minecraftData.profile;
+    final minecraftId = minecraftProfile?.id;
 
-      await _saveActiveAccountId(authData.microsoftAccountId);
-
-      final newAccount = Account(
-        id: authData.microsoftAccountId,
+    if (existingAccount != null) {
+      debugPrint(
+        '既存の Microsoft アカウントを更新します: $microsoftAccountId (Minecraft ID: $minecraftId)',
+      );
+      return existingAccount.copyWith(
         profile: authData.minecraftData.profile,
         microsoftRefreshToken: authData.microsoftRefreshToken,
         xboxToken: authData.xboxToken,
@@ -370,12 +375,44 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         minecraftAccessToken: authData.minecraftData.accessToken,
         minecraftTokenExpiry: authData.minecraftData.expiresAt,
         isActive: true,
-        xuid: authData.xuid, // XUIDを設定
+        xuid: authData.xuid,
+      );
+    } else {
+      debugPrint(
+        '新しい Microsoft アカウントを追加します: $microsoftAccountId (Minecraft ID: $minecraftId)',
+      );
+      return Account(
+        id: microsoftAccountId,
+        profile: authData.minecraftData.profile,
+        microsoftRefreshToken: authData.microsoftRefreshToken,
+        xboxToken: authData.xboxToken,
+        xboxTokenExpiry: authData.xboxTokenExpiry,
+        minecraftAccessToken: authData.minecraftData.accessToken,
+        minecraftTokenExpiry: authData.minecraftData.expiresAt,
+        isActive: true,
+        xuid: authData.xuid,
+      );
+    }
+  }
+
+  Future<MinecraftProfile?> completeAuthFlow(String deviceCode) async {
+    try {
+      final authData = await _processAuthentication(deviceCode: deviceCode);
+      final microsoftAccountId = authData.microsoftAccountId;
+
+      await _saveActiveAccountId(microsoftAccountId);
+
+      final existingAccount = state.accounts[microsoftAccountId];
+
+      final Account updatedAccount = _createOrUpdateAccount(
+        microsoftAccountId,
+        authData,
+        existingAccount,
       );
 
       await _handleAccountUpdate(
-        authData.microsoftAccountId,
-        newAccount,
+        microsoftAccountId,
+        updatedAccount,
         authData.minecraftData.profile,
       );
 
@@ -439,6 +476,29 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     MinecraftProfile? profile,
   ) async {
     final updatedAccounts = Map<String, Account>.from(state.accounts);
+
+    if (profile != null) {
+      final minecraftId = profile.id;
+      debugPrint('Minecraft ID: $minecraftId の重複チェック');
+
+      final duplicateAccountIds =
+          updatedAccounts.entries
+              .where(
+                (entry) =>
+                    entry.key != microsoftAccountId &&
+                    entry.value.profile?.id == minecraftId,
+              )
+              .map((e) => e.key)
+              .toList();
+
+      if (duplicateAccountIds.isNotEmpty) {
+        for (final accountId in duplicateAccountIds) {
+          debugPrint('重複するMinecraft IDを持つアカウントを削除: $accountId');
+          updatedAccounts.remove(accountId);
+        }
+      }
+    }
+
     updatedAccounts[microsoftAccountId] = newAccount;
 
     state = state.copyWith(
@@ -539,7 +599,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
               xboxTokenExpiry: authData.xboxTokenExpiry,
               minecraftAccessToken: authData.minecraftData.accessToken,
               minecraftTokenExpiry: authData.minecraftData.expiresAt,
-              xuid: authData.xuid, // XUIDを更新
+              xuid: authData.xuid,
             );
 
             await _updateAccount(microsoftAccountId, updatedAccount);
@@ -561,7 +621,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         xboxTokenExpiry: authData.xboxTokenExpiry,
         minecraftAccessToken: authData.minecraftData.accessToken,
         minecraftTokenExpiry: authData.minecraftData.expiresAt,
-        xuid: authData.xuid, // XUIDを更新
+        xuid: authData.xuid,
       );
 
       await _updateAccount(microsoftAccountId, updatedAccount);
@@ -724,21 +784,17 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         return null;
       }
 
-      final newAccount = Account(
-        id: microsoftAccountId,
-        profile: authData.minecraftData.profile,
-        microsoftRefreshToken: authData.microsoftRefreshToken,
-        xboxToken: authData.xboxToken,
-        xboxTokenExpiry: authData.xboxTokenExpiry,
-        minecraftAccessToken: authData.minecraftData.accessToken,
-        minecraftTokenExpiry: authData.minecraftData.expiresAt,
-        isActive: true,
-        xuid: authData.xuid, // XUIDを設定
+      final existingAccount = state.accounts[microsoftAccountId];
+
+      final Account updatedAccount = _createOrUpdateAccount(
+        microsoftAccountId,
+        authData,
+        existingAccount,
       );
 
       await _handleAccountUpdate(
         microsoftAccountId,
-        newAccount,
+        updatedAccount,
         authData.minecraftData.profile,
       );
 
@@ -767,7 +823,7 @@ class _AuthenticationData {
   final DateTime xboxTokenExpiry;
   final _MinecraftData minecraftData;
   final String microsoftAccountId;
-  final String? xuid; // XUIDフィールドを追加
+  final String? xuid;
 
   _AuthenticationData({
     required this.microsoftRefreshToken,
@@ -775,6 +831,6 @@ class _AuthenticationData {
     required this.xboxTokenExpiry,
     required this.minecraftData,
     required this.microsoftAccountId,
-    this.xuid, // コンストラクタにXUIDパラメータを追加
+    this.xuid,
   });
 }
