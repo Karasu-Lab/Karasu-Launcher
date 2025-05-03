@@ -68,7 +68,10 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
         border: Border.all(color: Colors.blue, width: 2),
       );
     } else {
-      return BoxDecoration(borderRadius: BorderRadius.circular(12));
+      return BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.transparent, width: 2),
+      );
     }
   }
 
@@ -105,6 +108,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: _getBorderDecoration(isActive, isSwitching),
+      padding: const EdgeInsets.all(2),
       child: Card(
         margin: EdgeInsets.zero,
         elevation: isActive ? 4 : 1,
