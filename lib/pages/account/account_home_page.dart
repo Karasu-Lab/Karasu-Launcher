@@ -17,6 +17,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
   late AnimationController _animationController;
   String? _switchingAccountId;
   bool _isReordering = false;
+  String? _refreshingAccountId;
 
   @override
   void initState() {
@@ -105,6 +106,8 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
     bool isSwitching,
     int index,
   ) {
+    final isRefreshing = _refreshingAccountId == account.id;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: _getBorderDecoration(isActive, isSwitching),
@@ -215,14 +218,32 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.blue, size: 20),
+                  icon:
+                      isRefreshing
+                          ? RotationTransition(
+                            turns: _animationController,
+                            child: const Icon(
+                              Icons.refresh,
+                              color: Colors.blue,
+                              size: 20,
+                            ),
+                          )
+                          : const Icon(
+                            Icons.refresh,
+                            color: Colors.blue,
+                            size: 20,
+                          ),
                   tooltip: 'トークンを更新',
                   onPressed:
                       _switchingAccountId != null
                           ? null
                           : () async {
                             setState(() {
+                              _refreshingAccountId = account.id;
                               _switchingAccountId = account.id;
+                              if (!_animationController.isAnimating) {
+                                _animationController.repeat();
+                              }
                             });
 
                             if (!isActive) {
@@ -236,6 +257,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                                 .refreshActiveAccount();
 
                             setState(() {
+                              _refreshingAccountId = null;
                               _switchingAccountId = null;
                             });
                           },

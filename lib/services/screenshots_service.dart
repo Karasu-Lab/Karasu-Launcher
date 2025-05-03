@@ -27,7 +27,6 @@ class ScreenshotsService {
       final jsonMap = json.decode(jsonString) as Map<String, dynamic>;
       return ScreenshotsCollection.fromJson(jsonMap);
     } catch (e) {
-      // ファイルの読み込みに失敗した場合は新しいコレクションを返す
       return ScreenshotsCollection();
     }
   }
@@ -36,14 +35,15 @@ class ScreenshotsService {
     try {
       final filePath = await getScreenshotsFilePath();
       final file = File(filePath);
-      
-      // ディレクトリが存在しない場合は作成
+
       final directory = file.parent;
       if (!await directory.exists()) {
         await directory.create(recursive: true);
       }
-      
-      final jsonString = json.encode(collection.toJson());
+
+      final jsonString = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(collection.toJson());
       await file.writeAsString(jsonString);
     } catch (e) {
       throw Exception('スクリーンショット情報の保存に失敗しました: $e');
@@ -57,19 +57,20 @@ class ScreenshotsService {
     Map<String, dynamic>? metadata,
   }) async {
     final collection = await loadScreenshots();
-    
+
     final screenshot = Screenshot(
       filePath: filePath,
       profileId: profileId,
       comment: comment,
       metadata: metadata,
     );
-    
+
     final updatedCollection = collection.addScreenshot(screenshot);
     await saveScreenshots(updatedCollection);
-    
+
     return screenshot;
   }
+
   Future<Screenshot?> getScreenshotById(String id) async {
     final collection = await loadScreenshots();
     return collection.screenshots[id];
@@ -77,11 +78,12 @@ class ScreenshotsService {
 
   Future<void> updateScreenshot(Screenshot screenshot) async {
     final collection = await loadScreenshots();
-    // 既存のスクリーンショットがない場合は追加、ある場合は更新
+
     final existingScreenshot = collection.screenshots[screenshot.id];
-    final updatedCollection = existingScreenshot != null 
-        ? collection.updateScreenshot(screenshot) 
-        : collection.addScreenshot(screenshot);
+    final updatedCollection =
+        existingScreenshot != null
+            ? collection.updateScreenshot(screenshot)
+            : collection.addScreenshot(screenshot);
     await saveScreenshots(updatedCollection);
   }
 
