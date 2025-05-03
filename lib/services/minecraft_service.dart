@@ -46,6 +46,7 @@ class MinecraftService {
         onAssetsProgress: notifier.onAssetsProgress,
         onLibrariesProgress: notifier.onLibrariesProgress,
         onPrepareComplete: notifier.onPrepareComplete,
+        onNativesProgress: notifier.onNativesProgress,
         onStdout: _handleStdout,
         onStderr: _handleStderr,
         onExit: notifier.onExit,

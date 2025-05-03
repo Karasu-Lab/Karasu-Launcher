@@ -43,6 +43,9 @@ class Account {
   @JsonKey(name: 'isActive')
   bool isActive;
 
+  @JsonKey(name: 'xuid')
+  String? xuid;
+
   /// コンストラクタ
   Account({
     required this.id,
@@ -54,6 +57,7 @@ class Account {
     this.minecraftAccessToken,
     this.minecraftTokenExpiry,
     this.isActive = false,
+    this.xuid,
   });
 
   /// JSONからAccountを作成
@@ -93,6 +97,7 @@ class Account {
     String? minecraftAccessToken,
     DateTime? minecraftTokenExpiry,
     bool? isActive,
+    String? xuid,
   }) {
     return Account(
       id: id ?? this.id,
@@ -104,6 +109,7 @@ class Account {
       minecraftAccessToken: minecraftAccessToken ?? this.minecraftAccessToken,
       minecraftTokenExpiry: minecraftTokenExpiry ?? this.minecraftTokenExpiry,
       isActive: isActive ?? this.isActive,
+      xuid: xuid ?? this.xuid,
     );
   }
 }

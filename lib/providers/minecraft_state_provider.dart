@@ -7,7 +7,7 @@ final minecraftStateProvider =
     });
 
 class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
-  MinecraftStateNotifier() : super(const MinecraftState());
+  MinecraftStateNotifier() : super(MinecraftState());
 
   // 起動状態を設定
   void setLaunching(bool isLaunching) {
@@ -77,6 +77,14 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
   void onPrepareComplete() {
     updateProgress(1.0, '起動中...');
     addLog('Minecraft起動準備完了', level: LogLevel.info);
+  }
+
+  void onNativesProgress(double progress, int current, int total) {
+    updateProgress(progress, 'ネイティブライブラリ取得中: ${(progress * 100).toInt()}%');
+    addLog(
+      'ネイティブライブラリ取得中: $current/$total (${(progress * 100).toInt()}%)',
+      level: LogLevel.info,
+    );
   }
 
   // 終了時のコールバック関数

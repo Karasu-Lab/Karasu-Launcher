@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:karasu_launcher/models/screenshot.dart';
 import 'package:karasu_launcher/models/screenshots_collection.dart';
 import 'package:karasu_launcher/utils/file_utils.dart';

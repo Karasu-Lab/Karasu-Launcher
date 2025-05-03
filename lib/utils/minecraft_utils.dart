@@ -221,7 +221,6 @@ Future<void> downloadMinecraftAssets(
         downloadedSize += assetObj.size;
 
         final currentPercentage = (downloadedSize * 100 / totalSize);
-        final displayPercentage = currentPercentage.toStringAsFixed(1);
 
         if (onProgress != null) {
           onProgress(downloadedSize / totalSize, downloaded, totalAssets);
@@ -229,11 +228,8 @@ Future<void> downloadMinecraftAssets(
 
         if (downloaded % 10 == 0 ||
             (currentPercentage.floor() >
-                ((downloadedSize - assetObj.size) * 100 / totalSize).floor())) {
-          debugPrint(
-            'ダウンロード進捗: $downloaded / $totalAssets アセット ($displayPercentage%)',
-          );
-        }
+                ((downloadedSize - assetObj.size) * 100 / totalSize)
+                    .floor())) {}
       } catch (e) {
         debugPrint('アセット ${entry.key} のダウンロードに失敗: $e');
       }
@@ -310,7 +306,6 @@ Future<void> downloadMinecraftLibraries(
 
         final currentPercentage =
             totalSize > 0 ? (downloadedSize * 100 / totalSize) : 100.0;
-        final displayPercentage = currentPercentage.toStringAsFixed(1);
 
         if (onProgress != null) {
           onProgress(
@@ -327,11 +322,7 @@ Future<void> downloadMinecraftLibraries(
                                 (library.downloads?.artifact?.size ?? 0)) *
                             100 /
                             totalSize)
-                        .floor())) {
-          debugPrint(
-            'ライブラリダウンロード進捗: $downloaded / $totalLibraries 個 ($displayPercentage%)',
-          );
-        }
+                        .floor())) {}
       } catch (e) {
         debugPrint('ライブラリ ${library.name} のダウンロード処理に失敗: $e');
         // 個別のエラーはスキップして続行
@@ -352,6 +343,7 @@ Future<void> downloadRequiredMinecraftFiles(
   String versionId, {
   ProgressCallback? onAssetsProgress,
   ProgressCallback? onLibrariesProgress,
+  ProgressCallback? onNativesProgress,
 }) async {
   try {
     await downloadMinecraftClient(versionId);
@@ -359,6 +351,16 @@ Future<void> downloadRequiredMinecraftFiles(
     await downloadMinecraftLibraries(
       versionId,
       onProgress: onLibrariesProgress,
+    );
+
+    final versionInfo = await fetchVersionInfo(versionId);
+    final appDir = await createAppDirectory();
+    final nativeDir = p.join(appDir.path, 'natives', versionId);
+    await Directory(nativeDir).create(recursive: true);
+    await extractNativeLibraries(
+      versionInfo,
+      nativeDir,
+      onProgress: onNativesProgress,
     );
 
     debugPrint('Minecraftバージョン $versionId の必要ファイルのダウンロードが完了しました');
@@ -371,6 +373,7 @@ Future<Process> launchMinecraft(
   Profile profile, {
   ProgressCallback? onAssetsProgress,
   ProgressCallback? onLibrariesProgress,
+  ProgressCallback? onNativesProgress,
   PrepareCompleteCallback? onPrepareComplete,
   MinecraftExitCallback? onExit,
   MinecraftOutputCallback? onStdout,
@@ -395,14 +398,15 @@ Future<Process> launchMinecraft(
       versionId,
       onAssetsProgress: onAssetsProgress,
       onLibrariesProgress: onLibrariesProgress,
+      onNativesProgress: onNativesProgress,
     );
 
     final versionInfo = await fetchVersionInfo(versionId);
     final classpath = await buildClasspath(versionInfo, versionId);
     final appDir = await createAppDirectory();
     final nativeDir = p.join(appDir.path, 'natives', versionId);
-    await Directory(nativeDir).create(recursive: true);
-    await extractNativeLibraries(versionInfo, nativeDir);
+
+    // ネイティブライブラリは既にdownloadRequiredMinecraftFilesで抽出されているため、ここでの抽出は不要に
     final jvmArgs = await constructJvmArguments(
       versionInfo: versionInfo,
       nativeDir: nativeDir,
@@ -488,12 +492,17 @@ Future<Process> launchMinecraft(
 
 Future<void> extractNativeLibraries(
   VersionInfo versionInfo,
-  String nativesDir,
-) async {
+  String nativesDir, {
+  ProgressCallback? onProgress,
+}) async {
   debugPrint('ネイティブライブラリの抽出を開始...');
 
   if (versionInfo.libraries == null) {
     debugPrint('ライブラリ情報がありません');
+    // 情報がない場合でも100%完了を報告
+    if (onProgress != null) {
+      onProgress(1.0, 1, 1);
+    }
     return;
   }
 
@@ -506,40 +515,69 @@ Future<void> extractNativeLibraries(
   );
   await Directory(tempDir).create(recursive: true);
 
-  try {
-    for (final lib in versionInfo.libraries!) {
-      if (lib.name == null) continue;
-      final String libName = lib.name!.toLowerCase();
-      final bool isNativeLib =
-          libName.contains('lwjgl') ||
-          libName.contains('jinput') ||
-          libName.contains('glfw') ||
-          libName.contains('jemalloc') ||
-          libName.contains('openal') ||
-          (libName.contains('natives') && !libName.contains('natives-maven'));
+  // ネイティブライブラリをフィルタリング
+  final nativeLibraries = <Libraries>[];
+  for (final lib in versionInfo.libraries!) {
+    if (lib.name == null) continue;
+    final String libName = lib.name!.toLowerCase();
+    final bool isNativeLib =
+        libName.contains('lwjgl') ||
+        libName.contains('jinput') ||
+        libName.contains('glfw') ||
+        libName.contains('jemalloc') ||
+        libName.contains('openal') ||
+        (libName.contains('natives') && !libName.contains('natives-maven'));
 
-      if (!isNativeLib) continue;
+    if (!isNativeLib) continue;
 
-      bool shouldExtract = true;
-      if (lib.rules != null) {
-        shouldExtract = false;
-        for (final rule in lib.rules!) {
-          final bool osMatch =
-              rule.os == null ||
-              (Platform.isWindows && rule.os!.name == Name.windows) ||
-              (Platform.isLinux && rule.os!.name == Name.linux) ||
-              (Platform.isMacOS && rule.os!.name == Name.osx);
+    bool shouldExtract = true;
+    if (lib.rules != null) {
+      shouldExtract = false;
+      for (final rule in lib.rules!) {
+        final bool osMatch =
+            rule.os == null ||
+            (Platform.isWindows && rule.os!.name == Name.windows) ||
+            (Platform.isLinux && rule.os!.name == Name.linux) ||
+            (Platform.isMacOS && rule.os!.name == Name.osx);
 
-          if (osMatch) {
-            shouldExtract = rule.action == Action.allow;
-          }
+        if (osMatch) {
+          shouldExtract = rule.action == Action.allow;
         }
       }
+    }
 
-      if (!shouldExtract) continue;
+    if (shouldExtract) {
+      nativeLibraries.add(lib);
+    }
+  }
 
+  // ネイティブライブラリがない場合は早期リターン
+  if (nativeLibraries.isEmpty) {
+    debugPrint('抽出すべきネイティブライブラリがありません');
+    if (onProgress != null) {
+      onProgress(1.0, 1, 1);
+    }
+    return;
+  }
+
+  try {
+    int processed = 0;
+    final total = nativeLibraries.length;
+
+    // 初期進捗を報告
+    if (onProgress != null) {
+      onProgress(0.0, 0, total);
+    }
+
+    for (final lib in nativeLibraries) {
       final libParts = lib.name!.split(':');
-      if (libParts.length < 3) continue;
+      if (libParts.length < 3) {
+        processed++;
+        if (onProgress != null) {
+          onProgress(processed / total, processed, total);
+        }
+        continue;
+      }
 
       final String group = libParts[0].replaceAll('.', '/');
       final String artifact = libParts[1];
@@ -553,6 +591,10 @@ Future<void> extractNativeLibraries(
       } else if (Platform.isMacOS) {
         nativeSuffix = 'natives-osx';
       } else {
+        processed++;
+        if (onProgress != null) {
+          onProgress(processed / total, processed, total);
+        }
         continue;
       }
 
@@ -568,6 +610,10 @@ Future<void> extractNativeLibraries(
 
       if (!await nativeJarFile.exists()) {
         debugPrint('ネイティブライブラリが見つかりません: $nativeJarPath');
+        processed++;
+        if (onProgress != null) {
+          onProgress(processed / total, processed, total);
+        }
         continue;
       }
 
@@ -580,6 +626,14 @@ Future<void> extractNativeLibraries(
       await extractJar(nativeJarFile.path, tempJarDir);
 
       await copyNativeFiles(tempJarDir, nativesDir);
+
+      processed++;
+      // 各ライブラリの処理完了時に正確な進捗を報告
+      if (onProgress != null) {
+        // 進捗が1.0を超えないようにする
+        final progress = total > 0 ? processed / total : 1.0;
+        onProgress(progress, processed, total);
+      }
     }
 
     debugPrint('ネイティブライブラリの抽出が完了しました');
@@ -590,6 +644,11 @@ Future<void> extractNativeLibraries(
       await Directory(tempDir).delete(recursive: true);
     } catch (e) {
       debugPrint('一時ディレクトリの削除に失敗しました: $e');
+    }
+
+    // 完了時に確実に100%の進捗を報告
+    if (onProgress != null) {
+      onProgress(1.0, nativeLibraries.length, nativeLibraries.length);
     }
   }
 }
@@ -806,6 +865,8 @@ Future<List<String>> constructGameArgumentsWithAuth({
       uuid: '00000000-0000-0000-0000-000000000000',
       accessToken: '00000000000000000000000000000000',
       userType: 'mojang', // オフラインモードではmojangタイプを使用
+      xuid: null,
+      clientId: null,
     );
 
     // --demoフラグが含まれていなければ追加（重複防止）
@@ -814,10 +875,8 @@ Future<List<String>> constructGameArgumentsWithAuth({
       args.add('--demo');
     }
 
-    // --clientIdなどの引数を削除（マイクロソフト認証関連）
-    args.removeWhere(
-      (arg) => arg.startsWith('--clientId') || arg.startsWith('--xuid'),
-    );
+    // クライアントID、XUID関連の引数を削除
+    removeAuthRelatedArgs(args);
 
     return args;
   }
@@ -852,6 +911,11 @@ Future<List<String>> constructGameArgumentsWithAuth({
     hasGameOwnership = false;
   }
 
+  // Microsoftアカウント認証情報
+  final xuid = account.xuid;
+  // Minecraftのclientidは固定値（公開情報）
+  const clientId = "00000000402b5328";
+
   final args = await constructGameArguments(
     versionInfo: versionInfo,
     appDir: appDir,
@@ -861,7 +925,9 @@ Future<List<String>> constructGameArgumentsWithAuth({
     uuid: account.profile?.id ?? '00000000-0000-0000-0000-000000000000',
     accessToken:
         account.minecraftAccessToken ?? '00000000000000000000000000000000',
-    userType: 'microsoft', // Microsoftアカウントの場合
+    userType: 'msa', // Microsoft認証の場合はmsa
+    xuid: xuid, // XUIDがある場合のみ設定
+    clientId: clientId, // クライアントID
   );
 
   // 所有権がない場合はデモモードで起動
@@ -876,6 +942,37 @@ Future<List<String>> constructGameArgumentsWithAuth({
   return args;
 }
 
+/// 認証関連の不要な引数を削除する
+void removeAuthRelatedArgs(List<String> args) {
+  final authRelatedArgs = [
+    '--clientId',
+    '--xuid',
+    '-clientId',
+    '\${clientid}',
+    '\${auth_xuid}',
+  ];
+
+  for (int i = 0; i < args.length; i++) {
+    if (authRelatedArgs.contains(args[i])) {
+      // 引数とその値を削除（値がある場合）
+      args.removeAt(i);
+      if (i < args.length &&
+          !args[i].startsWith('--') &&
+          !args[i].startsWith('-')) {
+        args.removeAt(i);
+      }
+      i--; // インデックスを調整
+    } else if (args[i].startsWith('--clientId=') ||
+        args[i].startsWith('-clientId=') ||
+        args[i].contains('\${clientid}') ||
+        args[i].contains('\${auth_xuid}')) {
+      // Key=Value形式の引数や置換されていないプレースホルダーを含む引数を削除
+      args.removeAt(i);
+      i--; // インデックスを調整
+    }
+  }
+}
+
 Future<List<String>> constructGameArguments({
   required VersionInfo versionInfo,
   required String appDir,
@@ -885,7 +982,10 @@ Future<List<String>> constructGameArguments({
   String? uuid = '00000000-0000-0000-0000-000000000000',
   String? accessToken = '00000000000000000000000000000000',
   String? userType = 'mojang',
+  String? xuid,
+  String? clientId,
 }) async {
+  final parsedUuid = uuid!;
   final args = <String>[];
 
   if (versionInfo.arguments != null && versionInfo.arguments!.game != null) {
@@ -918,12 +1018,22 @@ Future<List<String>> constructGameArguments({
               gameDir,
               appDir,
               versionInfo.assetIndex?.id ?? 'legacy',
-              uuid!,
+              parsedUuid,
               accessToken!,
               userType!,
               versionInfo.type ?? 'release',
+              xuid,
+              clientId,
             );
-            tempArgs.add(value);
+            // プレースホルダーが残っている場合でも、userTypeがmsaの場合は追加
+            final containsUnresolvedPlaceholders =
+                value.contains('\${clientid}') ||
+                value.contains('\${auth_xuid}');
+
+            if (!containsUnresolvedPlaceholders ||
+                (userType == 'msa' && xuid != null && clientId != null)) {
+              tempArgs.add(value);
+            }
           } else if (argValue is List) {
             for (final item in argValue) {
               if (item is String) {
@@ -934,12 +1044,22 @@ Future<List<String>> constructGameArguments({
                   gameDir,
                   appDir,
                   versionInfo.assetIndex?.id ?? 'legacy',
-                  uuid!,
+                  parsedUuid,
                   accessToken!,
                   userType!,
                   versionInfo.type ?? 'release',
+                  xuid,
+                  clientId,
                 );
-                tempArgs.add(value);
+                // プレースホルダーが残っている場合でも、userTypeがmsaの場合は追加
+                final containsUnresolvedPlaceholders =
+                    value.contains('\${clientid}') ||
+                    value.contains('\${auth_xuid}');
+
+                if (!containsUnresolvedPlaceholders ||
+                    (userType == 'msa' && xuid != null && clientId != null)) {
+                  tempArgs.add(value);
+                }
               }
             }
           }
@@ -1000,6 +1120,14 @@ Future<List<String>> constructGameArguments({
       versionInfo.type ?? 'release',
     ];
 
+    // Microsoftアカウントの場合、追加の認証引数を追加
+    if (userType == 'msa' && xuid != null && clientId != null) {
+      defaultArgs.add('--xuid');
+      defaultArgs.add(xuid);
+      defaultArgs.add('--clientId');
+      defaultArgs.add(clientId);
+    }
+
     for (final arg in defaultArgs) {
       String processedArg = replaceArgumentPlaceholders(
         arg!,
@@ -1008,10 +1136,12 @@ Future<List<String>> constructGameArguments({
         gameDir,
         appDir,
         versionInfo.assetIndex?.id ?? 'legacy',
-        uuid!,
+        parsedUuid,
         accessToken!,
         userType!,
         versionInfo.type ?? 'release',
+        xuid,
+        clientId,
       );
       args.add(processedArg);
     }
@@ -1030,9 +1160,11 @@ String replaceArgumentPlaceholders(
   String uuid,
   String accessToken,
   String userType,
-  String versionType,
-) {
-  return arg
+  String versionType, [
+  String? xuid,
+  String? clientId,
+]) {
+  String result = arg
       .replaceAll('\${auth_player_name}', username)
       .replaceAll('\${version_name}', versionId)
       .replaceAll('\${game_directory}', gameDir)
@@ -1044,6 +1176,17 @@ String replaceArgumentPlaceholders(
       .replaceAll('\${version_type}', versionType)
       .replaceAll('\${resolution_width}', '854')
       .replaceAll('\${resolution_height}', '480');
+
+  // Microsoftアカウント認証関連の引数を置換
+  if (xuid != null) {
+    result = result.replaceAll('\${auth_xuid}', xuid);
+  }
+
+  if (clientId != null) {
+    result = result.replaceAll('\${clientid}', clientId);
+  }
+
+  return result;
 }
 
 Future<String> findJavaPath(Profile profile) async {

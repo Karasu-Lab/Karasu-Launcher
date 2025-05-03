@@ -331,7 +331,10 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       );
 
       final microsoftAccountId = xboxLiveResponse.displayClaims.xui[0].uhs;
+      // XUIDを取得
+      final xuid = xboxLiveResponse.displayClaims.xui[0].uhs;
       debugPrint('MicrosoftアカウントID (UHS) を取得: $microsoftAccountId');
+      debugPrint('Xbox XUID を取得: $xuid');
 
       final minecraftData = await _getMinecraftData(
         xstsResponse.displayClaims.xui[0].uhs,
@@ -344,6 +347,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         xboxTokenExpiry: DateTime.now().add(const Duration(hours: 24)),
         minecraftData: minecraftData,
         microsoftAccountId: microsoftAccountId,
+        xuid: xuid, // XUIDを追加
       );
     } catch (e) {
       debugPrint('認証処理エラー: $e');
@@ -366,6 +370,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         minecraftAccessToken: authData.minecraftData.accessToken,
         minecraftTokenExpiry: authData.minecraftData.expiresAt,
         isActive: true,
+        xuid: authData.xuid, // XUIDを設定
       );
 
       await _handleAccountUpdate(
@@ -534,6 +539,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
               xboxTokenExpiry: authData.xboxTokenExpiry,
               minecraftAccessToken: authData.minecraftData.accessToken,
               minecraftTokenExpiry: authData.minecraftData.expiresAt,
+              xuid: authData.xuid, // XUIDを更新
             );
 
             await _updateAccount(microsoftAccountId, updatedAccount);
@@ -555,6 +561,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         xboxTokenExpiry: authData.xboxTokenExpiry,
         minecraftAccessToken: authData.minecraftData.accessToken,
         minecraftTokenExpiry: authData.minecraftData.expiresAt,
+        xuid: authData.xuid, // XUIDを更新
       );
 
       await _updateAccount(microsoftAccountId, updatedAccount);
@@ -726,6 +733,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         minecraftAccessToken: authData.minecraftData.accessToken,
         minecraftTokenExpiry: authData.minecraftData.expiresAt,
         isActive: true,
+        xuid: authData.xuid, // XUIDを設定
       );
 
       await _handleAccountUpdate(
@@ -759,6 +767,7 @@ class _AuthenticationData {
   final DateTime xboxTokenExpiry;
   final _MinecraftData minecraftData;
   final String microsoftAccountId;
+  final String? xuid; // XUIDフィールドを追加
 
   _AuthenticationData({
     required this.microsoftRefreshToken,
@@ -766,5 +775,6 @@ class _AuthenticationData {
     required this.xboxTokenExpiry,
     required this.minecraftData,
     required this.microsoftAccountId,
+    this.xuid, // コンストラクタにXUIDパラメータを追加
   });
 }

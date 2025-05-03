@@ -28,6 +28,7 @@ Account _$AccountFromJson(Map<String, dynamic> json) => Account(
           ? null
           : DateTime.parse(json['minecraftTokenExpiry'] as String),
   isActive: json['isActive'] as bool? ?? false,
+  xuid: json['xuid'] as String?,
 );
 
 Map<String, dynamic> _$AccountToJson(Account instance) => <String, dynamic>{
@@ -40,4 +41,5 @@ Map<String, dynamic> _$AccountToJson(Account instance) => <String, dynamic>{
   'minecraftAccessToken': instance.minecraftAccessToken,
   'minecraftTokenExpiry': instance.minecraftTokenExpiry?.toIso8601String(),
   'isActive': instance.isActive,
+  'xuid': instance.xuid,
 };

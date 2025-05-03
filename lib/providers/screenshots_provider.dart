@@ -30,19 +30,33 @@ Future<void> updateScreenshotComment(
 class ScreenshotsNotifier
     extends StateNotifier<AsyncValue<ScreenshotsCollection>> {
   final ScreenshotsService _screenshotsService;
-
+  bool _mounted = true;
   ScreenshotsNotifier(this._screenshotsService)
     : super(const AsyncValue.loading()) {
-    Future.microtask(() => loadScreenshots());
+    Future(() {
+      loadScreenshots();
+    });
+  }
+  @override
+  void dispose() {
+    _mounted = false;
+    super.dispose();
   }
 
   Future<void> loadScreenshots() async {
+    if (!_mounted) return;
     try {
-      state = const AsyncValue.loading();
+      Future.microtask(() => state = const AsyncValue.loading());
+
       final collection = await _screenshotsService.loadScreenshots();
-      state = AsyncValue.data(collection);
+
+      if (_mounted) {
+        Future.microtask(() => state = AsyncValue.data(collection));
+      }
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      if (_mounted) {
+        Future.microtask(() => state = AsyncValue.error(e, stack));
+      }
     }
   }
 
@@ -52,6 +66,7 @@ class ScreenshotsNotifier
     String? comment,
     Map<String, dynamic>? metadata,
   }) async {
+    if (!_mounted) return;
     try {
       final screenshot = await _screenshotsService.addScreenshot(
         filePath: file.path,
@@ -60,15 +75,22 @@ class ScreenshotsNotifier
         metadata: metadata,
       );
 
-      state.whenData((collection) {
-        state = AsyncValue.data(collection.addScreenshot(screenshot));
-      });
+      if (_mounted) {
+        state.whenData((collection) {
+          Future.microtask(
+            () => state = AsyncValue.data(collection.addScreenshot(screenshot)),
+          );
+        });
+      }
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      if (_mounted) {
+        Future.microtask(() => state = AsyncValue.error(e, stack));
+      }
     }
   }
 
   Future<void> updateScreenshotComment(String id, Screenshot screenshot) async {
+    if (!_mounted) return;
     try {
       final currentState = state;
       if (currentState is AsyncData<ScreenshotsCollection>) {
@@ -91,32 +113,44 @@ class ScreenshotsNotifier
 
         if (existingScreenshot != null) {
           await _screenshotsService.updateScreenshot(updatedScreenshot);
-
           final updatedCollection = collection.updateScreenshot(
             updatedScreenshot,
           );
-          state = AsyncValue.data(updatedCollection);
+          if (_mounted) {
+            Future.microtask(() => state = AsyncValue.data(updatedCollection));
+          }
         } else {
           await _screenshotsService.updateScreenshot(updatedScreenshot);
 
           final updatedCollection = collection.addScreenshot(updatedScreenshot);
-          state = AsyncValue.data(updatedCollection);
+          if (_mounted) {
+            Future.microtask(() => state = AsyncValue.data(updatedCollection));
+          }
         }
       }
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      if (_mounted) {
+        Future.microtask(() => state = AsyncValue.error(e, stack));
+      }
     }
   }
 
   Future<void> removeScreenshot(String id) async {
+    if (!_mounted) return;
     try {
       await _screenshotsService.removeScreenshot(id);
 
-      state.whenData((collection) {
-        state = AsyncValue.data(collection.removeScreenshot(id));
-      });
+      if (_mounted) {
+        state.whenData((collection) {
+          Future.microtask(
+            () => state = AsyncValue.data(collection.removeScreenshot(id)),
+          );
+        });
+      }
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      if (_mounted) {
+        Future.microtask(() => state = AsyncValue.error(e, stack));
+      }
     }
   }
 
