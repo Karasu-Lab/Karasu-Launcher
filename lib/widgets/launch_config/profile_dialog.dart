@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
+import 'package:karasu_launcher/models/launcher_versions_v2.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
 
 class ProfileDialog extends StatefulWidget {
@@ -80,7 +81,8 @@ class _ProfileDialogState extends State<ProfileDialog> {
                     controller: gameDirController,
                     decoration: const InputDecoration(
                       labelText: 'Game directory (Optional)',
-                      hintText: 'If this entry is empty, this value will be default.',
+                      hintText:
+                          'If this entry is empty, this value will be default.',
                     ),
                   ),
                 ),
@@ -113,7 +115,9 @@ class _ProfileDialogState extends State<ProfileDialog> {
 
             if (name.isEmpty || selectedVersion == null) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Profile name and version are required')),
+                const SnackBar(
+                  content: Text('Profile name and version are required'),
+                ),
               );
               return;
             }
@@ -275,7 +279,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
   }
 
   Widget _buildScrollableVersionList(
-    List<dynamic> versions,
+    List<MinecraftVersion> versions,
     BuildContext context,
   ) {
     return Padding(
@@ -327,7 +331,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
                                 size: 16,
                                 color:
                                     isSelected
-                                        ? Theme.of(context).primaryColor
+                                        ? Theme.of(context).colorScheme.primary
                                         : null,
                               ),
                               const SizedBox(width: 8),
@@ -341,7 +345,9 @@ class _ProfileDialogState extends State<ProfileDialog> {
                                             : FontWeight.normal,
                                     color:
                                         isSelected
-                                            ? Theme.of(context).primaryColor
+                                            ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
                                             : null,
                                   ),
                                   overflow: TextOverflow.ellipsis,

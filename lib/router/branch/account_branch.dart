@@ -4,7 +4,7 @@ part of '../routes.dart';
   path: '/accounts',
   routes: [
     TypedGoRoute<AccountSignInRoute>(path: 'sign-in'),
-    TypedGoRoute<AccountProfileRoute>(path: 'profile'),
+    TypedGoRoute<AccountProfileRoute>(path: 'profiles/:id'),
     TypedGoRoute<AccountSignOutRoute>(path: 'sign-out'),
   ],
 )
@@ -27,11 +27,13 @@ class AccountSignInRoute extends GoRouteData {
 }
 
 class AccountProfileRoute extends GoRouteData {
-  const AccountProfileRoute();
+  const AccountProfileRoute({required this.id});
+
+  final String id;
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    return const AccountProfilePage();
+    return AccountProfilePage(microsoftId: id);
   }
 }
 
@@ -50,7 +52,7 @@ const accountStatefulShellBranch = TypedStatefulShellBranch<AccountBranchData>(
       path: '/accounts',
       routes: [
         TypedGoRoute<AccountSignInRoute>(path: 'sign-in'),
-        TypedGoRoute<AccountProfileRoute>(path: 'profile'),
+        TypedGoRoute<AccountProfileRoute>(path: 'profiles/:id'),
         TypedGoRoute<AccountSignOutRoute>(path: 'sign-out'),
       ],
     ),

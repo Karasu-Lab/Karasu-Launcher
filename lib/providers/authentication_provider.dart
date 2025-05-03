@@ -659,6 +659,50 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     }
   }
 
+  Future<void> logoutMicrosoftAccount(String microsoftAccountId) async {
+    try {
+      debugPrint('このMicrosoftアカウントをサインアウトします: $microsoftAccountId');
+
+      // 指定されたアカウントが存在するか確認
+      if (!state.accounts.containsKey(microsoftAccountId)) {
+        debugPrint('アカウントが見つかりません: $microsoftAccountId');
+        return;
+      }
+
+      final isActiveAccount =
+          state.activeMicrosoftAccountId == microsoftAccountId;
+      final updatedAccounts = Map<String, Account>.from(state.accounts);
+      updatedAccounts.remove(microsoftAccountId);
+
+      String? newActiveId;
+
+      // アクティブなアカウントを削除した場合は新しいアクティブアカウントを設定
+      if (isActiveAccount) {
+        if (updatedAccounts.isNotEmpty) {
+          // 他のアカウントがある場合は最初のアカウントを使用
+          newActiveId = updatedAccounts.keys.first;
+          debugPrint('新しいアクティブアカウントに切り替え: $newActiveId');
+        } else {
+          // 他のアカウントがない場合はオフラインモードに
+          newActiveId = null;
+          debugPrint('アカウントがないため、オフラインモードに切り替えます');
+        }
+        await _saveActiveAccountId(newActiveId);
+      }
+
+      state = state.copyWith(
+        accounts: updatedAccounts,
+        activeMicrosoftAccountId:
+            isActiveAccount ? newActiveId : state.activeMicrosoftAccountId,
+      );
+
+      await _saveAccounts();
+      debugPrint('ストレージ内のアカウントの削除が完了しました: $microsoftAccountId');
+    } catch (e) {
+      debugPrint('サインアウト中にエラーが発生しました: $e');
+    }
+  }
+
   Future<String?> getAccessTokenForService() async {
     if (state.activeAccount == null) return null;
 

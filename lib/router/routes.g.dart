@@ -104,7 +104,7 @@ RouteBase get $mainShellRouteData => StatefulShellRouteData.$route(
               factory: $AccountSignInRouteExtension._fromState,
             ),
             GoRouteData.$route(
-              path: 'profile',
+              path: 'profiles/:id',
 
               factory: $AccountProfileRouteExtension._fromState,
             ),
@@ -316,9 +316,10 @@ extension $AccountSignInRouteExtension on AccountSignInRoute {
 
 extension $AccountProfileRouteExtension on AccountProfileRoute {
   static AccountProfileRoute _fromState(GoRouterState state) =>
-      const AccountProfileRoute();
+      AccountProfileRoute(id: state.pathParameters['id']!);
 
-  String get location => GoRouteData.$location('/accounts/profile');
+  String get location =>
+      GoRouteData.$location('/accounts/profiles/${Uri.encodeComponent(id)}');
 
   void go(BuildContext context) => context.go(location);
 
@@ -357,7 +358,7 @@ RouteBase get $accountHomeRoute => GoRouteData.$route(
       factory: $AccountSignInRouteExtension._fromState,
     ),
     GoRouteData.$route(
-      path: 'profile',
+      path: 'profiles/:id',
 
       factory: $AccountProfileRouteExtension._fromState,
     ),

@@ -38,46 +38,11 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
       _switchingAccountId = accountId;
     });
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('アカウントを切り替えています...'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-    }
-
-    final isTokenValid = await ref
-        .read(authenticationProvider.notifier)
-        .setActiveAccount(accountId);
+    await ref.read(authenticationProvider.notifier).setActiveAccount(accountId);
 
     setState(() {
       _switchingAccountId = null;
     });
-
-    if (context.mounted) {
-      final accountName =
-          ref.read(authenticationProvider).accounts[accountId]?.profile?.name ??
-          "Unknown";
-      if (isTokenValid) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$accountNameをアクティブアカウントに設定しました'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '$accountNameをアクティブアカウントに設定しましたが、トークンの検証に失敗しました。「トークンを更新」ボタンをお試しください。',
-            ),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -251,43 +216,17 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                                       _switchingAccountId = account.id;
                                     });
 
-                                    final isTokenValid = await ref
+                                    await ref
                                         .read(authenticationProvider.notifier)
                                         .setActiveAccount(account.id);
 
                                     setState(() {
                                       _switchingAccountId = null;
                                     });
-
-                                    if (context.mounted) {
-                                      if (isTokenValid) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しました',
-                                            ),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しましたが、トークンの検証に失敗しました。「トークンを更新」ボタンをお試しください。',
-                                            ),
-                                            backgroundColor: Colors.orange,
-                                            duration: const Duration(
-                                              seconds: 5,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    }
                                   },
+                          onLongPress: () {
+                            context.go('/accounts/profiles/${account.id}');
+                          },
                           leading: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -368,63 +307,12 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                                       isRefreshing
                                           ? null
                                           : () async {
-                                            final profile =
-                                                await ref
-                                                    .read(
-                                                      authenticationProvider
-                                                          .notifier,
-                                                    )
-                                                    .refreshActiveAccount();
-
-                                            if (context.mounted) {
-                                              if (profile != null) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      '${profile.name}のトークンを更新しました',
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.green,
-                                                  ),
-                                                );
-                                              } else {
-                                                final account =
-                                                    ref
-                                                        .read(
-                                                          authenticationProvider,
-                                                        )
-                                                        .activeAccount;
-                                                if (account != null &&
-                                                    account
-                                                        .hasValidMinecraftToken) {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        'トークンを更新しました (${account.profile?.name ?? "Unknown"})',
-                                                      ),
-                                                      backgroundColor:
-                                                          Colors.green,
-                                                    ),
-                                                  );
-                                                } else {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        'トークンの更新に失敗しました',
-                                                      ),
-                                                      backgroundColor:
-                                                          Colors.red,
-                                                    ),
-                                                  );
-                                                }
-                                              }
-                                            }
+                                            await ref
+                                                .read(
+                                                  authenticationProvider
+                                                      .notifier,
+                                                )
+                                                .refreshActiveAccount();
                                           },
                                 ),
                               if (isActive == false)
@@ -440,7 +328,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                                               _switchingAccountId = account.id;
                                             });
 
-                                            final isTokenValid = await ref
+                                            await ref
                                                 .read(
                                                   authenticationProvider
                                                       .notifier,
@@ -450,79 +338,18 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                                             setState(() {
                                               _switchingAccountId = null;
                                             });
-
-                                            if (context.mounted) {
-                                              if (isTokenValid) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しました',
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.green,
-                                                  ),
-                                                );
-                                              } else {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      '${account.profile?.name ?? "Unknown"}をアクティブアカウントに設定しましたが、トークンの検証に失敗しました。「トークンを更新」ボタンをお試しください。',
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.orange,
-                                                    duration: const Duration(
-                                                      seconds: 5,
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                            }
                                           },
                                 ),
+
                               IconButton(
                                 icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.red,
+                                  Icons.arrow_forward_ios,
+                                  size: 18,
                                 ),
-                                tooltip: '削除',
+                                tooltip: 'プロフィール詳細',
                                 onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder:
-                                        (ctx) => AlertDialog(
-                                          title: const Text('アカウント削除'),
-                                          content: Text(
-                                            '${account.profile?.name ?? "Unknown"}のアカウントを削除しますか？',
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed:
-                                                  () => Navigator.of(ctx).pop(),
-                                              child: const Text('キャンセル'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.of(ctx).pop();
-                                                ref
-                                                    .read(
-                                                      authenticationProvider
-                                                          .notifier,
-                                                    )
-                                                    .removeAccount(account.id);
-                                              },
-                                              child: const Text(
-                                                '削除',
-                                                style: TextStyle(
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                  context.go(
+                                    '/accounts/profiles/${account.id}',
                                   );
                                 },
                               ),
@@ -568,40 +395,14 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                     onPressed: () async {
                       if (isOfflineMode) {
                         if (accounts.isNotEmpty) {
-                          final lastUsedAccount =
-                              await ref
-                                  .read(authenticationProvider.notifier)
-                                  .restoreLastActiveAccount();
-
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  lastUsedAccount != null
-                                      ? '${lastUsedAccount.profile?.name ?? "Unknown"}でオンラインモードに戻りました'
-                                      : 'アカウントを選択してください',
-                                ),
-                                backgroundColor:
-                                    lastUsedAccount != null
-                                        ? Colors.green
-                                        : Colors.orange,
-                              ),
-                            );
-                          }
+                          await ref
+                              .read(authenticationProvider.notifier)
+                              .restoreLastActiveAccount();
                         }
                       } else {
                         await ref
                             .read(authenticationProvider.notifier)
                             .clearActiveAccount();
-
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('オフラインモードに切り替えました'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        }
                       }
                     },
                   ),
@@ -611,15 +412,6 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
           ],
         ),
       ),
-      floatingActionButton:
-          authState.isAuthenticated
-              ? FloatingActionButton.extended(
-                icon: const Icon(Icons.logout),
-                label: const Text('ログアウト'),
-                backgroundColor: Colors.red,
-                onPressed: () => context.go('/accounts/sign-out'),
-              )
-              : null,
     );
   }
 }
