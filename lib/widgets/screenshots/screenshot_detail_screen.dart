@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_clipboard/image_clipboard.dart';
 import 'package:karasu_launcher/models/screenshot.dart';
 import 'package:karasu_launcher/providers/screenshots_provider.dart';
 import 'package:karasu_launcher/widgets/common/confirmation_dialog.dart';
@@ -9,6 +11,7 @@ import 'package:karasu_launcher/widgets/common/error_dialog.dart';
 import 'package:karasu_launcher/widgets/common/feature_in_development_dialog.dart';
 import 'package:karasu_launcher/widgets/screenshots/screenshot_comment_dialog.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 class ScreenshotDetailScreen extends ConsumerStatefulWidget {
   final File screenshot;
@@ -60,6 +63,40 @@ class _ScreenshotDetailScreenState
     });
   }
 
+  Future<String> saveImageToFile(Uint8List imageData) async {
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/image.png');
+    await file.writeAsBytes(imageData);
+    return file.path;
+  }
+
+  Future<void> copyImageToClipboard(Uint8List imageData) async {
+    final imagePath = await saveImageToFile(imageData);
+    final normalizedPath = imagePath.replaceAll('\\', '/');
+    final imageClipboard = ImageClipboard();
+    await imageClipboard.copyImage(normalizedPath);
+  }
+
+  Future<void> _copyImageToClipboard() async {
+    try {
+      final bytes = await widget.screenshot.readAsBytes();
+      copyImageToClipboard(bytes);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('画像をクリップボードにコピーしました'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        await ErrorDialog.show(context, message: 'クリップボードへのコピーに失敗しました: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final fileName = path.basename(widget.screenshot.path);
@@ -78,6 +115,11 @@ class _ScreenshotDetailScreenState
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.copy),
+            tooltip: 'クリップボードにコピー',
+            onPressed: _copyImageToClipboard,
+          ),
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {

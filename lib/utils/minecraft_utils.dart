@@ -20,9 +20,16 @@ const String MINECRAFT_RESOURCES_URL =
 typedef ProgressCallback =
     void Function(double progress, int current, int total);
 typedef PrepareCompleteCallback = void Function();
-typedef MinecraftExitCallback = void Function(int? exitCode, bool normal);
+typedef MinecraftExitCallback =
+    void Function(
+      int? exitCode,
+      bool normal,
+      String? userId,
+      String? profileId,
+    );
 typedef MinecraftOutputCallback =
     void Function(String output, LogSource source);
+typedef LaunchMinecraftCallback = void Function();
 
 /// ファイルをダウンロードする共通関数
 Future<File> downloadFile(
@@ -378,6 +385,7 @@ Future<Process> launchMinecraft(
   MinecraftExitCallback? onExit,
   MinecraftOutputCallback? onStdout,
   MinecraftOutputCallback? onStderr,
+  LaunchMinecraftCallback? onMinecraftLaunch,
   Account? account,
   String? offlinePlayerName,
 }) async {
@@ -460,26 +468,47 @@ Future<Process> launchMinecraft(
       command,
       workingDirectory: gameDir.path,
     );
-    process.stdout.transform(utf8.decoder).listen((data) {
-      debugPrint('[Minecraft] $data');
-      if (onStdout != null) {
-        onStdout(data, LogSource.javaStdOut);
-      }
-    });
 
-    process.stderr.transform(utf8.decoder).listen((data) {
-      debugPrint('[Minecraft Error] $data');
-      if (onStderr != null) {
-        onStderr(data, LogSource.javaStdErr);
-      }
-    });
+    process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(
+          (data) {
+            debugPrint('[Minecraft] $data');
+            if (onStdout != null) {
+              onStdout(data, LogSource.javaStdOut);
+            }
+          },
+          onError: (error) {
+            debugPrint('[Minecraft] 標準出力の処理中にエラーが発生しました: $error');
+          },
+        );
+
+    process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(
+          (data) {
+            debugPrint('[Minecraft Error] $data');
+            if (onStderr != null) {
+              onStderr(data, LogSource.javaStdErr);
+            }
+          },
+          onError: (error) {
+            debugPrint('[Minecraft Error] 標準エラー出力の処理中にエラーが発生しました: $error');
+          },
+        );
 
     debugPrint('Minecraftプロセスを起動しました。PID: ${process.pid}');
+
+    if (onMinecraftLaunch != null) {
+      onMinecraftLaunch();
+    }
 
     process.exitCode.then((exitCode) {
       if (onExit != null) {
         final isNormalExit = exitCode == 0 || exitCode == 143; // 143はSIGTERM
-        onExit(exitCode, isNormalExit);
+        onExit(exitCode, isNormalExit, account?.id, profile.id);
       }
       debugPrint('Minecraftプロセスが終了しました。終了コード: $exitCode');
     });
@@ -708,12 +737,14 @@ Future<void> copyNativeFiles(String sourceDir, String targetDir) async {
             relativePath.endsWith('.so') ||
             relativePath.endsWith('.dylib')) {
           final targetPath = p.join(targetDir, p.basename(entity.path));
-          await entity.copy(targetPath);
+          if (!await File(targetPath).exists()) {
+            await entity.copy(targetPath);
+          }
         }
       }
     }
   } catch (e) {
-    debugPrint('ネイティブファイルのコピーに失敗: $e');
+    debugPrint('ネイティブファイルのコピーに失敗しました: $e');
   }
 }
 

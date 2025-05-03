@@ -25,7 +25,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
-    )..repeat();
+    )..repeat(reverse: true);
   }
 
   @override
@@ -53,13 +53,23 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
       final double animValue = _animationController.value;
       return BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        gradient: SweepGradient(
+          center: Alignment.center,
+          startAngle: 0,
+          endAngle: 2 * 3.14159,
           colors: [
-            Color.lerp(Colors.blue, Colors.green, animValue) ?? Colors.blue,
-            Color.lerp(Colors.green, Colors.blue, animValue) ?? Colors.green,
+            Colors.blue,
+            Colors.lightBlue,
+            Colors.cyan,
+            Colors.teal,
+            Colors.green,
+            Colors.teal,
+            Colors.cyan,
+            Colors.lightBlue,
+            Colors.blue,
           ],
+          stops: const [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0],
+          transform: GradientRotation(animValue * 2 * 3.14159),
         ),
         border: Border.all(width: 2, color: Colors.transparent),
       );
@@ -131,7 +141,9 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
               vertical: 8,
             ),
             onTap:
-                isActive || _switchingAccountId != null
+                isActive ||
+                        _switchingAccountId != null ||
+                        _refreshingAccountId != null
                     ? null
                     : () async {
                       setState(() {
@@ -146,9 +158,12 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                         _switchingAccountId = null;
                       });
                     },
-            onLongPress: () {
-              context.go('/accounts/profiles/${account.id}');
-            },
+            onLongPress:
+                _switchingAccountId != null || _refreshingAccountId != null
+                    ? null
+                    : () {
+                      context.go('/accounts/profiles/${account.id}');
+                    },
             leading: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -235,7 +250,8 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                           ),
                   tooltip: 'トークンを更新',
                   onPressed:
-                      _switchingAccountId != null
+                      _switchingAccountId != null ||
+                              _refreshingAccountId != null
                           ? null
                           : () async {
                             setState(() {
@@ -276,7 +292,8 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                     ),
                     tooltip: 'アクティブにする',
                     onPressed:
-                        _switchingAccountId != null
+                        _switchingAccountId != null ||
+                                _refreshingAccountId != null
                             ? null
                             : () async {
                               setState(() {
@@ -295,9 +312,13 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                 IconButton(
                   icon: const Icon(Icons.arrow_forward_ios, size: 18),
                   tooltip: 'プロフィール詳細',
-                  onPressed: () {
-                    context.go('/accounts/profiles/${account.id}');
-                  },
+                  onPressed:
+                      _switchingAccountId != null ||
+                              _refreshingAccountId != null
+                          ? null
+                          : () {
+                            context.go('/accounts/profiles/${account.id}');
+                          },
                 ),
               ],
             ),
@@ -419,6 +440,10 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                   buildDefaultDragHandles: false,
                   itemCount: accounts.entries.length,
                   onReorderStart: (_) {
+                    if (_switchingAccountId != null ||
+                        _refreshingAccountId != null) {
+                      return;
+                    }
                     setState(() {
                       _isReordering = true;
                     });
@@ -429,6 +454,11 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                     });
                   },
                   onReorder: (oldIndex, newIndex) async {
+                    if (_switchingAccountId != null ||
+                        _refreshingAccountId != null) {
+                      return;
+                    }
+
                     final success = await ref
                         .read(authenticationProvider.notifier)
                         .swapAccountIndexes(oldIndex, newIndex);

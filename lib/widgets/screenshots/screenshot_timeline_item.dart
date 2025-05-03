@@ -237,13 +237,15 @@ class ScreenshotTimelineItem extends StatelessWidget {
             profileId: profileId,
             createdAt: dateTime,
           );
-          ScreenshotCommentDialog.show(context, newScreenshot).then((
-            updatedScreenshot,
-          ) {
-            if (updatedScreenshot != null) {
-              onEditComment(updatedScreenshot);
-            }
-          });
+          if (context.mounted) {
+            ScreenshotCommentDialog.show(context, newScreenshot).then((
+              updatedScreenshot,
+            ) {
+              if (updatedScreenshot != null) {
+                onEditComment(updatedScreenshot);
+              }
+            });
+          }
         }
       });
     }

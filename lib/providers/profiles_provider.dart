@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/models/launcher_versions_v2.dart';
 import 'package:karasu_launcher/utils/file_utils.dart';
+import 'package:uuid/uuid.dart';
 
 final profilesProvider =
     StateNotifierProvider<ProfilesNotifier, LauncherProfiles?>((ref) {
@@ -168,6 +169,42 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
 
       state = LauncherProfiles.fromJson(json);
+
+      // nullのidを持つプロファイルにUUIDを割り当てる
+      bool hasNullIds = false;
+      final updatedProfiles = Map<String, Profile>.from(state!.profiles);
+
+      updatedProfiles.forEach((profileId, profile) {
+        if (profile.id == null) {
+          updatedProfiles[profileId] = Profile(
+            id: const Uuid().v4(), // 新しいUUIDを割り当て
+            name: profile.name,
+            type: profile.type,
+            created: profile.created,
+            lastUsed: profile.lastUsed,
+            lastVersionId: profile.lastVersionId,
+            gameDir: profile.gameDir,
+            icon: profile.icon,
+            javaArgs: profile.javaArgs,
+            javaDir: profile.javaDir,
+            skipJreVersionCheck: profile.skipJreVersionCheck,
+            order: profile.order,
+          );
+          hasNullIds = true;
+        }
+      });
+
+      // nullのidがあった場合、更新した状態を保存
+      if (hasNullIds) {
+        debugPrint('nullのidを持つプロファイルにUUIDを割り当てました');
+        state = LauncherProfiles(
+          profiles: updatedProfiles,
+          settings: state!.settings,
+          version: state!.version,
+        );
+        await _saveProfiles();
+      }
+
       await _ensureDefaultProfiles(versionsData);
     } catch (e) {
       debugPrint('プロファイルのロードに失敗しました: $e');
@@ -184,6 +221,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
         versionsData?.latest.snapshot ?? 'latest-snapshot';
 
     final defaultReleaseProfile = Profile(
+      id: const Uuid().v4(), // UUIDを生成
       name: 'Latest Release',
       type: 'latest-release',
       created: DateTime.now().toIso8601String(),
@@ -192,6 +230,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
     );
 
     final defaultSnapshotProfile = Profile(
+      id: const Uuid().v4(), // UUIDを生成
       name: 'Latest Snapshot',
       type: 'latest-snapshot',
       created: DateTime.now().toIso8601String(),
@@ -237,6 +276,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
     if (latestReleaseProfile == null) {
       // 存在しない場合は作成
       updatedProfiles['latest_release'] = Profile(
+        id: const Uuid().v4(), // UUIDを生成
         name: 'Latest Release',
         type: 'latest-release',
         created: DateTime.now().toIso8601String(),
@@ -248,6 +288,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
         versionsData.latest.release) {
       // バージョンが古い場合は更新
       updatedProfiles['latest_release'] = Profile(
+        id: latestReleaseProfile.id, // 既存のIDを保持
         name: latestReleaseProfile.name,
         type: latestReleaseProfile.type,
         created: latestReleaseProfile.created,
@@ -258,6 +299,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
         javaArgs: latestReleaseProfile.javaArgs,
         javaDir: latestReleaseProfile.javaDir,
         skipJreVersionCheck: latestReleaseProfile.skipJreVersionCheck,
+        order: latestReleaseProfile.order,
       );
       needsUpdate = true;
     }
@@ -267,6 +309,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
     if (latestSnapshotProfile == null) {
       // 存在しない場合は作成
       updatedProfiles['latest_snapshot'] = Profile(
+        id: const Uuid().v4(), // UUIDを生成
         name: 'Latest Snapshot',
         type: 'latest-snapshot',
         created: DateTime.now().toIso8601String(),
@@ -278,6 +321,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
         versionsData.latest.snapshot) {
       // バージョンが古い場合は更新
       updatedProfiles['latest_snapshot'] = Profile(
+        id: latestSnapshotProfile.id, // 既存のIDを保持
         name: latestSnapshotProfile.name,
         type: latestSnapshotProfile.type,
         created: latestSnapshotProfile.created,
@@ -288,6 +332,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
         javaArgs: latestSnapshotProfile.javaArgs,
         javaDir: latestSnapshotProfile.javaDir,
         skipJreVersionCheck: latestSnapshotProfile.skipJreVersionCheck,
+        order: latestSnapshotProfile.order,
       );
       needsUpdate = true;
     }
@@ -321,8 +366,29 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
   Future<void> addOrUpdateProfile(String id, Profile profile) async {
     if (state == null) await _loadProfiles();
     if (state == null) return;
+
     final updatedProfiles = Map<String, Profile>.from(state!.profiles);
-    updatedProfiles[id] = profile;
+
+    // プロファイルにIDが設定されていない場合、UUIDを生成
+    final profileWithId =
+        profile.id == null
+            ? Profile(
+              id: const Uuid().v4(), // UUIDを生成
+              name: profile.name,
+              type: profile.type,
+              created: profile.created,
+              lastUsed: profile.lastUsed,
+              lastVersionId: profile.lastVersionId,
+              gameDir: profile.gameDir,
+              icon: profile.icon,
+              javaArgs: profile.javaArgs,
+              javaDir: profile.javaDir,
+              skipJreVersionCheck: profile.skipJreVersionCheck,
+              order: profile.order,
+            )
+            : profile;
+
+    updatedProfiles[id] = profileWithId;
 
     state = LauncherProfiles(
       profiles: updatedProfiles,
@@ -397,6 +463,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
         final profile = updatedProfiles[profileId]!;
         // 現在のプロファイルの値を保持したまま、order属性のみ更新
         updatedProfiles[profileId] = Profile(
+          id: profile.id, // 既存のIDを保持
           name: profile.name,
           type: profile.type,
           created: profile.created,
@@ -439,6 +506,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
     final profile = state!.profiles[id]!;
 
     final updatedProfile = Profile(
+      id: profile.id, // IDを保持
       name: profile.name,
       type: profile.type,
       created: profile.created,
@@ -449,6 +517,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
       lastVersionId: profile.lastVersionId,
       lastUsed: DateTime.now().toIso8601String(),
       skipJreVersionCheck: profile.skipJreVersionCheck,
+      order: profile.order,
     );
 
     await addOrUpdateProfile(id, updatedProfile);

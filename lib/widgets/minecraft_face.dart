@@ -148,7 +148,7 @@ class _MinecraftFaceState extends State<MinecraftFace>
 
       stream.addListener(listener);
     } catch (e) {
-      print('Error loading image: $e');
+      debugPrint('Error loading image: $e');
     }
   }
 
@@ -199,7 +199,7 @@ class _MinecraftFaceState extends State<MinecraftFace>
       width: widget.size,
       height: widget.size,
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.3),
+        color: Colors.grey.withAlpha((0.3 * 255).toInt()),
         border: Border.all(color: Colors.grey),
       ),
     );

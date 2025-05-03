@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/models/minecraft_state.dart';
 import 'package:karasu_launcher/providers/minecraft_state_provider.dart';
 import 'dart:async';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class LogTab extends ConsumerStatefulWidget {
   const LogTab({super.key});
@@ -11,7 +12,8 @@ class LogTab extends ConsumerStatefulWidget {
   ConsumerState<LogTab> createState() => _LogTabState();
 }
 
-class _LogTabState extends ConsumerState<LogTab> {
+class _LogTabState extends ConsumerState<LogTab>
+    with AutomaticKeepAliveClientMixin {
   bool _showInfoLogs = true;
   bool _showDebugLogs = true;
   bool _showWarningLogs = true;
@@ -26,10 +28,14 @@ class _LogTabState extends ConsumerState<LogTab> {
   Timer? _updateTimer;
   List<LogMessage> _lastLogs = [];
   bool _needsRefiltration = true;
+  bool _isLoading = false;
+  bool _isManualScrolling = false;
+  final ScrollController _loadingScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_handleScrollChange);
     _updateTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (mounted) {
         final minecraftState = ref.read(minecraftStateProvider);
@@ -43,14 +49,22 @@ class _LogTabState extends ConsumerState<LogTab> {
         Future.microtask(() {
           if (!mounted) return;
           setState(() {
-            _currentFilteredLogs = _filteredLogs(_lastLogs);
-            _needsRefiltration = false;
+            _isLoading = true;
+          });
 
-            if (_autoScroll &&
-                _currentFilteredLogs.length > _previousLogCount) {
-              Future.microtask(() => _smoothScrollToBottom());
-            }
-            _previousLogCount = _currentFilteredLogs.length;
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (!mounted) return;
+            setState(() {
+              _currentFilteredLogs = _filteredLogs(_lastLogs);
+              _needsRefiltration = false;
+              _isLoading = false;
+
+              if (_autoScroll &&
+                  _currentFilteredLogs.length > _previousLogCount) {
+                _checkAndScrollToBottom();
+              }
+              _previousLogCount = _currentFilteredLogs.length;
+            });
           });
         });
       }
@@ -60,8 +74,32 @@ class _LogTabState extends ConsumerState<LogTab> {
   @override
   void dispose() {
     _updateTimer?.cancel();
+    _scrollController.removeListener(_handleScrollChange);
     _scrollController.dispose();
+    _loadingScrollController.dispose();
     super.dispose();
+  }
+
+  void _handleScrollChange() {
+    if (_scrollController.hasClients) {
+      final isScrolling = _scrollController.position.isScrollingNotifier.value;
+
+      if (isScrolling) {
+        setState(() {
+          _isManualScrolling = true;
+        });
+
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted &&
+              _scrollController.hasClients &&
+              !_scrollController.position.isScrollingNotifier.value) {
+            setState(() {
+              _isManualScrolling = false;
+            });
+          }
+        });
+      }
+    }
   }
 
   void _clearLogs() {
@@ -71,9 +109,16 @@ class _LogTabState extends ConsumerState<LogTab> {
   void _onFilterChanged() {
     setState(() {
       _needsRefiltration = true;
+      _isLoading = true;
 
-      _currentFilteredLogs = _filteredLogs(_lastLogs);
-      _needsRefiltration = false;
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        setState(() {
+          _currentFilteredLogs = _filteredLogs(_lastLogs);
+          _needsRefiltration = false;
+          _isLoading = false;
+        });
+      });
     });
   }
 
@@ -101,6 +146,14 @@ class _LogTabState extends ConsumerState<LogTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_autoScroll && !_isLoading && _currentFilteredLogs.isNotEmpty) {
+        _smoothScrollToBottom();
+      }
+    });
+
     return Column(
       children: [
         Padding(
@@ -158,7 +211,6 @@ class _LogTabState extends ConsumerState<LogTab> {
                 ],
               ),
               const SizedBox(height: 8),
-
               Row(
                 children: [
                   const Text('ソース: '),
@@ -224,24 +276,81 @@ class _LogTabState extends ConsumerState<LogTab> {
             height: 300,
             margin: const EdgeInsets.all(8.0),
             child:
-                _currentFilteredLogs.isEmpty
+                _isLoading
+                    ? _buildLoadingState()
+                    : _currentFilteredLogs.isEmpty
                     ? const Center(child: Text('ログはありません'))
-                    : ListView.builder(
-                      controller: _scrollController,
-                      itemCount: _currentFilteredLogs.length,
-                      itemBuilder: (context, index) {
-                        final log = _currentFilteredLogs[index];
-                        return ListTile(
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                          leading: _getIconForLogLevel(log.level),
-                          title: Text(
-                            '${_getFormattedTimestamp(log.timestamp)} ${log.message}',
+                    : RepaintBoundary(
+                      child: CustomScrollView(
+                        controller: _scrollController,
+                        slivers: [
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final log = _currentFilteredLogs[index];
+                              return Text(
+                                '${_getFormattedTimestamp(log.timestamp)} ${log.message}',
+                                style: TextStyle(
+                                  color: _getColorForLogLevel(log.level),
+                                ),
+                              );
+                            }, childCount: _currentFilteredLogs.length),
                           ),
-                          textColor: _getColorForLogLevel(log.level),
-                        );
-                      },
+                        ],
+                      ),
                     ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Stack(
+      children: [
+        RepaintBoundary(
+          child: Skeletonizer(
+            enabled: true,
+            child: ListView.builder(
+              controller: _loadingScrollController,
+              itemCount: 10,
+              itemBuilder: (context, index) {
+                final mockLevel =
+                    index % 4 == 0
+                        ? LogLevel.info
+                        : index % 4 == 1
+                        ? LogLevel.debug
+                        : index % 4 == 2
+                        ? LogLevel.warning
+                        : LogLevel.error;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 4.0,
+                  ),
+                  child: Text(
+                    '[00:00:00] サンプルログメッセージ $index',
+                    style: TextStyle(
+                      color: _getColorForLogLevel(mockLevel),
+                      fontSize: 13,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const CircularProgressIndicator(),
           ),
         ),
       ],
@@ -255,32 +364,31 @@ class _LogTabState extends ConsumerState<LogTab> {
   void _smoothScrollToBottom() {
     if (!_scrollController.hasClients) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (!mounted || !_scrollController.hasClients) return;
 
-      if (_scrollController.position.pixels >
-          _scrollController.position.maxScrollExtent - 100) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      } else {
+      if (_isManualScrolling) {
+        return;
+      }
+
+      try {
+        final maxExtent = _scrollController.position.maxScrollExtent;
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
+          maxExtent + 200,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.linear,
         );
+      } catch (e) {
+        debugPrint('Scroll error: $e');
       }
     });
   }
 
-  Icon _getIconForLogLevel(LogLevel level) {
-    switch (level) {
-      case LogLevel.info:
-        return const Icon(Icons.app_shortcut, color: Colors.blue);
-      case LogLevel.debug:
-        return const Icon(Icons.file_download, color: Colors.green);
-      case LogLevel.warning:
-        return const Icon(Icons.library_books, color: Colors.orange);
-      case LogLevel.error:
-        return const Icon(Icons.error_outline, color: Colors.red);
+  void _checkAndScrollToBottom() {
+    if (_autoScroll && _currentFilteredLogs.isNotEmpty && !_isManualScrolling) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _smoothScrollToBottom();
+      });
     }
   }
 
@@ -296,4 +404,7 @@ class _LogTabState extends ConsumerState<LogTab> {
         return Colors.red.shade700;
     }
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }

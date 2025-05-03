@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/models/minecraft_state.dart';
@@ -50,6 +52,7 @@ class MinecraftService {
         onStdout: _handleStdout,
         onStderr: _handleStderr,
         onExit: notifier.onExit,
+        onMinecraftLaunch: notifier.onMinecraftLaunch,
         account: account,
         offlinePlayerName: offlinePlayerName,
       );
@@ -60,19 +63,33 @@ class MinecraftService {
   }
 
   void _handleStdout(String line, LogSource source) {
-    if (line.toLowerCase().contains("debug")) {
-      _addLogWithSource(line, LogLevel.debug, LogSource.javaStdOut);
-    } else {
-      _addLogWithSource(line, LogLevel.info, LogSource.javaStdOut);
+    try {
+      final decodedLine = utf8.decode(line.codeUnits, allowMalformed: true);
+      if (decodedLine.toLowerCase().contains("debug")) {
+        _addLogWithSource(decodedLine, LogLevel.debug, LogSource.javaStdOut);
+      } else {
+        _addLogWithSource(decodedLine, LogLevel.info, LogSource.javaStdOut);
+      }
+    } catch (e) {
+      _ref
+          .read(minecraftStateProvider.notifier)
+          .addLog('標準出力の処理中にエラーが発生しました: $e', level: LogLevel.error);
     }
   }
 
   void _handleStderr(String line, LogSource source) {
-    if (line.toLowerCase().contains("warn") ||
-        line.toLowerCase().contains("warning")) {
-      _addLogWithSource(line, LogLevel.warning, LogSource.javaStdErr);
-    } else {
-      _addLogWithSource(line, LogLevel.error, LogSource.javaStdErr);
+    try {
+      final decodedLine = utf8.decode(line.codeUnits, allowMalformed: true);
+      if (decodedLine.toLowerCase().contains("warn") ||
+          decodedLine.toLowerCase().contains("warning")) {
+        _addLogWithSource(decodedLine, LogLevel.warning, LogSource.javaStdErr);
+      } else {
+        _addLogWithSource(decodedLine, LogLevel.error, LogSource.javaStdErr);
+      }
+    } catch (e) {
+      _ref
+          .read(minecraftStateProvider.notifier)
+          .addLog('標準エラー出力の処理中にエラーが発生しました: $e', level: LogLevel.error);
     }
   }
 

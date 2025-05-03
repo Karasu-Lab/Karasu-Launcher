@@ -4,6 +4,8 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_windows
+  image_clipboard
+  pasteboard
   url_launcher_windows
 )
 

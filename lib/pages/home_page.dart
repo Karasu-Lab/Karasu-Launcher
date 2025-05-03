@@ -8,6 +8,7 @@ import 'package:karasu_launcher/pages/home/play_tab.dart';
 import 'package:karasu_launcher/pages/home/launch_config_tab.dart';
 import 'package:karasu_launcher/pages/home/patch_notes_tab.dart';
 import 'package:karasu_launcher/pages/home/log_tab.dart';
+import 'package:karasu_launcher/providers/authentication_provider.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -29,7 +30,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   void initState() {
     super.initState();
 
-    // postFrameCallbackを使用すると安全にプロバイダーの状態を更新できます
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(profilesProvider.notifier).reloadProfiles();
 
@@ -81,10 +81,13 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final minecraftState = ref.watch(minecraftStateProvider);
+    final minecraftStateNotifier = ref.watch(minecraftStateProvider.notifier);
     final minecraftService = ref.read(minecraftServiceProvider);
 
     final profilesData = ref.watch(profilesProvider);
     final selectedProfileId = ref.watch(selectedProfileProvider);
+
+    final activeAccount = ref.watch(activeAccountProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(_tabs[_currentTabIndex].title)),
@@ -134,9 +137,30 @@ class _HomePageState extends ConsumerState<HomePage> {
                             final profile =
                                 profilesData.profiles[selectedProfileId];
                             if (profile != null) {
+                              final profileId =
+                                  profile.id ?? profile.gameDir ?? 'unknown';
+
+                              final userId =
+                                  activeAccount?.id ?? 'offline-user';
+
+                              if (minecraftStateNotifier.isUserLaunchingProfile(
+                                userId,
+                                profileId,
+                              )) {
+                                final shouldLaunch =
+                                    await _showDuplicateProfileWarningDialog();
+                                if (shouldLaunch != true) return;
+                              }
+
                               await ref
                                   .read(profilesProvider.notifier)
                                   .updateProfileLastUsed(selectedProfileId);
+
+                              minecraftStateNotifier.setUserLaunchingProfile(
+                                userId,
+                                profileId,
+                                isOfflineUser: activeAccount == null,
+                              );
 
                               await minecraftService.launchMinecraftAsService(
                                 profile,
@@ -178,7 +202,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                               MediaQuery.of(context).size.width *
                               0.4 *
                               minecraftState.progressValue,
-                          child: Container(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
                             decoration: BoxDecoration(
                               color: const Color(0xFF2E7D32),
                               borderRadius: BorderRadius.horizontal(
@@ -204,32 +230,62 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
                         ),
-
                       Center(
-                        child: Text(
-                          selectedProfileId == null || profilesData == null
-                              ? 'Please select a profile'
-                              : minecraftState.isLaunching
-                              ? minecraftState.progressText
-                              : 'Launch ${profilesData.profiles[selectedProfileId]?.name ?? 'Unknown'}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: const [
-                              Shadow(
-                                color: Colors.black54,
-                                offset: Offset(1.0, 1.0),
-                                blurRadius: 3.0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                selectedProfileId == null ||
+                                        profilesData == null
+                                    ? 'プロファイルを選択してください'
+                                    : minecraftState.isLaunching &&
+                                        minecraftState.isGlobalLaunching
+                                    ? minecraftState.progressText
+                                    : 'Launch ${profilesData.profiles[selectedProfileId]?.name ?? 'Unknown'}',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: const [
+                                    Shadow(
+                                      color: Colors.black54,
+                                      offset: Offset(1.0, 1.0),
+                                      blurRadius: 3.0,
+                                    ),
+                                    Shadow(
+                                      color: Colors.black38,
+                                      offset: Offset(-1.0, -1.0),
+                                      blurRadius: 3.0,
+                                    ),
+                                  ],
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              Shadow(
-                                color: Colors.black38,
-                                offset: Offset(-1.0, -1.0),
-                                blurRadius: 3.0,
+                            ),
+                            if (selectedProfileId != null &&
+                                profilesData != null &&
+                                !minecraftState.isGlobalLaunching)
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.account_circle,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () async {
+                                  final userId =
+                                      activeAccount?.id ?? 'offline-user';
+
+                                  if (minecraftStateNotifier.isUserLaunching(
+                                    userId,
+                                  )) {
+                                    final shouldLaunch =
+                                        await _showDuplicateWarningDialog();
+                                    if (shouldLaunch != true) return;
+                                  }
+                                },
+                                tooltip: '別インスタンスで起動',
                               ),
-                            ],
-                          ),
-                          textAlign: TextAlign.center,
+                          ],
                         ),
                       ),
                     ],
@@ -240,6 +296,56 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<bool?> _showDuplicateWarningDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('警告'),
+            content: const Text(
+              '同じプロファイルのMinecraftインスタンスが既に起動中です。\n'
+              '同じプロファイルを複数起動すると問題が発生する可能性があります。\n\n'
+              '続行しますか？',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('キャンセル'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('起動する'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<bool?> _showDuplicateProfileWarningDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('警告'),
+            content: const Text(
+              '同じプロファイルがすでに起動しています。\n'
+              '同じプロファイルを複数起動すると、セーブデータの破損など問題が発生する可能性があります。\n\n'
+              '続行しますか？',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('キャンセル'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('起動する'),
+              ),
+            ],
+          ),
     );
   }
 }

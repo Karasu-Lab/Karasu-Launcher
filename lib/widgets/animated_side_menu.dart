@@ -106,6 +106,11 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _buildMenuItem(
+                      Icons.monitor,
+                      'タスクマネージャー',
+                      path: '/taskmanager',
+                    ),
                     Consumer(
                       builder: (context, ref, child) {
                         final authState = ref.watch(authenticationProvider);

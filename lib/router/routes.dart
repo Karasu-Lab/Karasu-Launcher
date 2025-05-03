@@ -21,6 +21,7 @@ import '../pages/loading_page.dart';
 import '../pages/account/account_home_page.dart';
 import '../pages/account/account_sign_in_page.dart';
 import '../pages/account/account_profile_page.dart';
+import '../pages/taskmanager_page.dart';
 
 part 'routes.g.dart';
 part 'branch/home_branch.dart';
@@ -30,6 +31,7 @@ part 'branch/mod_branch.dart';
 part 'branch/server_branch.dart';
 part 'branch/social_branch.dart';
 part 'branch/account_branch.dart';
+part 'branch/taskmanager_branch.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _sideMenuNavigatorKey = GlobalKey<NavigatorState>();
@@ -55,6 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     serverStatefulShellBranch,
     socialStatefulShellBranch,
     accountStatefulShellBranch,
+    taskManagerStatefulShellBranch,
   ],
 )
 class MainShellRouteData extends StatefulShellRouteData {

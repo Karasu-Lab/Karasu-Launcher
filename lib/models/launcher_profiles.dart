@@ -27,6 +27,9 @@ class LauncherProfiles {
 
 @JsonSerializable()
 class Profile {
+  @JsonKey(name: 'id')
+  final String? id;
+
   @JsonKey(name: 'created')
   final String? created;
 
@@ -61,6 +64,7 @@ class Profile {
   final int? order; // 並び順を追加
 
   Profile({
+    this.id,
     this.created,
     this.gameDir,
     this.icon,

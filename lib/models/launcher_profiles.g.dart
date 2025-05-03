@@ -23,6 +23,7 @@ Map<String, dynamic> _$LauncherProfilesToJson(LauncherProfiles instance) =>
     };
 
 Profile _$ProfileFromJson(Map<String, dynamic> json) => Profile(
+  id: json['id'] as String?,
   created: json['created'] as String?,
   gameDir: json['gameDir'] as String?,
   icon: json['icon'] as String?,
@@ -37,6 +38,7 @@ Profile _$ProfileFromJson(Map<String, dynamic> json) => Profile(
 );
 
 Map<String, dynamic> _$ProfileToJson(Profile instance) => <String, dynamic>{
+  'id': instance.id,
   'created': instance.created,
   'gameDir': instance.gameDir,
   'icon': instance.icon,

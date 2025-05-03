@@ -112,6 +112,15 @@ RouteBase get $mainShellRouteData => StatefulShellRouteData.$route(
         ),
       ],
     ),
+    StatefulShellBranchData.$branch(
+      routes: [
+        GoRouteData.$route(
+          path: '/taskmanager',
+
+          factory: $TaskManagerPageRouteExtension._fromState,
+        ),
+      ],
+    ),
   ],
 );
 
@@ -315,6 +324,22 @@ extension $AccountProfileRouteExtension on AccountProfileRoute {
 
   String get location =>
       GoRouteData.$location('/accounts/profiles/${Uri.encodeComponent(id)}');
+
+  void go(BuildContext context) => context.go(location);
+
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  void replace(BuildContext context) => context.replace(location);
+}
+
+extension $TaskManagerPageRouteExtension on TaskManagerPageRoute {
+  static TaskManagerPageRoute _fromState(GoRouterState state) =>
+      const TaskManagerPageRoute();
+
+  String get location => GoRouteData.$location('/taskmanager');
 
   void go(BuildContext context) => context.go(location);
 

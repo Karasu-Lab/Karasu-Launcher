@@ -59,11 +59,9 @@ class XboxAccountTile extends ConsumerWidget {
             padding: const EdgeInsets.all(12.0),
             child: Row(
               children: [
-                // アバター画像
                 _buildProfileAvatar(profile),
                 const SizedBox(width: 12),
 
-                // アカウント情報
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +102,6 @@ class XboxAccountTile extends ConsumerWidget {
                   ),
                 ),
 
-                // アクションボタン
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -186,7 +183,6 @@ class XboxAccountTile extends ConsumerWidget {
   }
 }
 
-/// ポップアップでXboxアカウントタイルを表示するボタンウィジェット
 class XboxAccountButton extends ConsumerWidget {
   final VoidCallback? onAccountChanged;
 
@@ -197,7 +193,6 @@ class XboxAccountButton extends ConsumerWidget {
     final authState = ref.watch(authenticationProvider);
     final activeAccount = authState.activeAccount;
 
-    // アクティブアカウントのアバターを表示
     Widget avatarWidget = Container(
       width: 32,
       height: 32,
@@ -208,11 +203,8 @@ class XboxAccountButton extends ConsumerWidget {
       child: const Icon(Icons.account_circle, color: Colors.white70, size: 24),
     );
 
-    // アクティブアカウントが存在する場合の表示処理
     if (activeAccount != null) {
-      // Minecraft認証がされているかチェック
       if (activeAccount.hasValidMinecraftToken) {
-        // Minecraft認証済みで、スキンURLが存在する場合はそのアバターを表示
         if (activeAccount.profile?.skinUrl != null) {
           avatarWidget = ClipRRect(
             borderRadius: BorderRadius.circular(16),
@@ -238,7 +230,6 @@ class XboxAccountButton extends ConsumerWidget {
             ),
           );
         } else {
-          // スキンURLがない場合はデフォルトのMinecraftアイコンを表示
           avatarWidget = Container(
             width: 32,
             height: 32,
@@ -254,7 +245,6 @@ class XboxAccountButton extends ConsumerWidget {
           );
         }
       } else {
-        // Minecraft認証がされていない場合はXboxアイコンを表示
         avatarWidget = Container(
           width: 32,
           height: 32,
@@ -263,7 +253,7 @@ class XboxAccountButton extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
           ),
           child: const Icon(
-            Icons.sports_esports, // Xboxのアイコン
+            Icons.sports_esports,
             color: Colors.white70,
             size: 24,
           ),
@@ -364,9 +354,7 @@ class XboxAccountButton extends ConsumerWidget {
                         },
                       ),
                     );
-                  }).toList(),
-
-                  // 新規アカウント追加ボタン
+                  }),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
