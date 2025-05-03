@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/models/screenshot.dart';
@@ -32,7 +33,7 @@ class ScreenshotsNotifier
 
   ScreenshotsNotifier(this._screenshotsService)
     : super(const AsyncValue.loading()) {
-    loadScreenshots();
+    Future.microtask(() => loadScreenshots());
   }
 
   Future<void> loadScreenshots() async {

@@ -2,21 +2,15 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 
-/// Minecraftのスキンから顔部分のみを表示するウィジェット
-class MinecraftFace extends StatelessWidget {
+class MinecraftFace extends StatefulWidget {
   final ImageProvider imageProvider;
   final double size;
   final bool showOverlay;
-  
-  // 画像キャッシュの実装
+
   static final Map<String, ui.Image> _imageCache = {};
-  
-  /// コンストラクタ
-  ///
-  /// [imageProvider] スキン画像のプロバイダー（ネットワーク、アセット、メモリ等）
-  /// [size] 表示サイズ
-  /// [showOverlay] 顔の前面レイヤーを表示するかどうか
+
   const MinecraftFace({
     super.key,
     required this.imageProvider,
@@ -24,7 +18,6 @@ class MinecraftFace extends StatelessWidget {
     this.showOverlay = true,
   });
 
-  /// ネットワーク画像からMinecraftの顔を表示
   factory MinecraftFace.network(
     String url, {
     Key? key,
@@ -34,13 +27,12 @@ class MinecraftFace extends StatelessWidget {
   }) {
     return MinecraftFace(
       key: key,
-      imageProvider: NetworkImage(url, headers: headers),
+      imageProvider: CachedNetworkImageProvider(url, headers: headers),
       size: size,
       showOverlay: showOverlay,
     );
   }
 
-  /// アセット画像からMinecraftの顔を表示
   factory MinecraftFace.asset(
     String assetName, {
     Key? key,
@@ -57,7 +49,6 @@ class MinecraftFace extends StatelessWidget {
     );
   }
 
-  /// メモリ内の画像データからMinecraftの顔を表示
   factory MinecraftFace.memory(
     Uint8List bytes, {
     Key? key,
@@ -73,92 +64,148 @@ class MinecraftFace extends StatelessWidget {
     );
   }
 
-  /// 画像プロバイダーからキャッシュキーを生成
+  static void clearCache() {
+    _imageCache.clear();
+  }
+
+  @override
+  State<MinecraftFace> createState() => _MinecraftFaceState();
+}
+
+class _MinecraftFaceState extends State<MinecraftFace>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacityAnimation;
+  ui.Image? _loadedImage;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _opacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    _loadImage(widget.imageProvider);
+  }
+
+  @override
+  void didUpdateWidget(MinecraftFace oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.imageProvider != widget.imageProvider) {
+      _loadedImage = null;
+      _controller.reset();
+      _loadImage(widget.imageProvider);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadImage(ImageProvider provider) async {
+    try {
+      final String cacheKey = _getCacheKey(provider);
+
+      if (MinecraftFace._imageCache.containsKey(cacheKey)) {
+        _loadedImage = MinecraftFace._imageCache[cacheKey];
+        if (mounted) {
+          setState(() {});
+          _controller.forward();
+        }
+        return;
+      }
+
+      final Completer<ui.Image> completer = Completer<ui.Image>();
+      final ImageStream stream = provider.resolve(ImageConfiguration.empty);
+
+      final ImageStreamListener listener = ImageStreamListener(
+        (ImageInfo info, bool _) {
+          MinecraftFace._imageCache[cacheKey] = info.image;
+          _loadedImage = info.image;
+
+          if (mounted) {
+            setState(() {});
+
+            _controller.forward();
+          }
+
+          completer.complete(info.image);
+        },
+        onError: (dynamic exception, StackTrace? stackTrace) {
+          completer.completeError(exception, stackTrace);
+        },
+      );
+
+      stream.addListener(listener);
+    } catch (e) {
+      print('Error loading image: $e');
+    }
+  }
+
   String _getCacheKey(ImageProvider provider) {
     if (provider is NetworkImage) {
       return 'network_${provider.url}';
+    } else if (provider is CachedNetworkImageProvider) {
+      return 'cached_network_${provider.url}';
     } else if (provider is AssetImage) {
       return 'asset_${provider.assetName}';
     } else if (provider is MemoryImage) {
-      // メモリイメージの場合はバイト配列のハッシュコードを使用
       return 'memory_${provider.bytes.hashCode}';
     }
-    // その他のプロバイダーの場合はオブジェクトのハッシュコード
+
     return 'other_${provider.hashCode}';
   }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: size,
-      height: size,
-      child: FutureBuilder<ui.Image>(
-        future: _loadImage(imageProvider),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done &&
-              snapshot.hasData) {
-            return CustomPaint(
-              painter: _MinecraftFacePainter(
-                image: snapshot.data!,
-                showOverlay: showOverlay,
+      width: widget.size,
+      height: widget.size,
+      child: Stack(
+        children: [
+          _buildPlaceholder(),
+
+          if (_loadedImage != null)
+            AnimatedBuilder(
+              animation: _opacityAnimation,
+              builder: (context, child) {
+                return Opacity(opacity: _opacityAnimation.value, child: child);
+              },
+              child: CustomPaint(
+                painter: _MinecraftFacePainter(
+                  image: _loadedImage!,
+                  showOverlay: widget.showOverlay,
+                ),
+                size: Size(widget.size, widget.size),
               ),
-              size: Size(size, size),
-            );
-          } else {
-            // 画像読み込み中または失敗時のプレースホルダー
-            return _buildPlaceholder();
-          }
-        },
+            ),
+        ],
       ),
     );
   }
 
-  /// プレースホルダーウィジェットを構築
   Widget _buildPlaceholder() {
     return Container(
-      width: size,
-      height: size,
+      width: widget.size,
+      height: widget.size,
       decoration: BoxDecoration(
         color: Colors.grey.withOpacity(0.3),
         border: Border.all(color: Colors.grey),
       ),
     );
   }
-
-  /// 画像を非同期で読み込む（キャッシュ対応）
-  Future<ui.Image> _loadImage(ImageProvider provider) async {
-    final String cacheKey = _getCacheKey(provider);
-    
-    // キャッシュにある場合はそれを返す
-    if (_imageCache.containsKey(cacheKey)) {
-      return _imageCache[cacheKey]!;
-    }
-    
-    final Completer<ui.Image> completer = Completer<ui.Image>();
-    final ImageStream stream = provider.resolve(ImageConfiguration.empty);
-
-    final ImageStreamListener listener = ImageStreamListener(
-      (ImageInfo info, bool _) {
-        // 画像をキャッシュに保存
-        _imageCache[cacheKey] = info.image;
-        completer.complete(info.image);
-      },
-      onError: (dynamic exception, StackTrace? stackTrace) {
-        completer.completeError(exception, stackTrace);
-      },
-    );
-
-    stream.addListener(listener);
-    return completer.future;
-  }
-  
-  /// キャッシュをクリア
-  static void clearCache() {
-    _imageCache.clear();
-  }
 }
 
-/// Minecraftの顔を描画するカスタムペインター
 class _MinecraftFacePainter extends CustomPainter {
   final ui.Image image;
   final bool showOverlay;
@@ -167,19 +214,15 @@ class _MinecraftFacePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Paint paint =
-        Paint()..filterQuality = FilterQuality.none; // ピクセルアートをきれいに表示
+    final Paint paint = Paint()..filterQuality = FilterQuality.none;
 
-    // 描画先のサイズに合わせてスケール
     final double scale = size.width / 8;
     canvas.scale(scale, scale);
 
-    // レイヤー1（顔の背景部分）を描画 - 座標(8,9)から(16,16)
     final Rect faceRect = Rect.fromLTRB(8, 9, 16, 16);
     final Rect destRect = Rect.fromLTRB(0, 0, 8, 8);
     canvas.drawImageRect(image, faceRect, destRect, paint);
 
-    // レイヤー2（顔の前面部分）を描画 - 座標(40,8)から(48,16)
     if (showOverlay) {
       final Rect overlayRect = Rect.fromLTRB(40, 8, 48, 16);
       canvas.drawImageRect(image, overlayRect, destRect, paint);
