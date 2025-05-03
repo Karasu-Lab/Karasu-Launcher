@@ -16,6 +16,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   String? _switchingAccountId;
+  bool _isReordering = false;
 
   @override
   void initState() {
@@ -153,8 +154,9 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                   ),
                 ),
                 const SizedBox(width: 8),
-
-                isSwitching
+                _isReordering
+                    ? const SizedBox(width: 32, height: 32)
+                    : isSwitching
                     ? SizedBox(
                       width: 32,
                       height: 32,
@@ -390,6 +392,16 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                 child: ReorderableListView.builder(
                   buildDefaultDragHandles: false,
                   itemCount: accounts.entries.length,
+                  onReorderStart: (_) {
+                    setState(() {
+                      _isReordering = true;
+                    });
+                  },
+                  onReorderEnd: (_) {
+                    setState(() {
+                      _isReordering = false;
+                    });
+                  },
                   onReorder: (oldIndex, newIndex) async {
                     final success = await ref
                         .read(authenticationProvider.notifier)
