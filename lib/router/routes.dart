@@ -21,7 +21,6 @@ import '../pages/loading_page.dart';
 import '../pages/account/account_home_page.dart';
 import '../pages/account/account_sign_in_page.dart';
 import '../pages/account/account_profile_page.dart';
-import '../pages/account/account_sign_out_page.dart';
 
 part 'routes.g.dart';
 part 'branch/home_branch.dart';

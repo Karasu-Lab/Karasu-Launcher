@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:karasu_launcher/widgets/custom_drop_down.dart';
 
 enum ProfileSortOption { custom, lastPlayed, created }
 
@@ -74,7 +75,7 @@ class ProfileSortSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButton<ProfileSortOption>(
+    return CustomDropdown<ProfileSortOption>(
       value: sortOption,
       items: const [
         DropdownMenuItem(

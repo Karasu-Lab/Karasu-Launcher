@@ -94,8 +94,8 @@ class AccountProfilePage extends ConsumerWidget {
                       title: const Text('トークン情報'),
                       subtitle: Text(
                         account.hasValidMinecraftToken
-                            ? 'Minecraftトークン有効'
-                            : 'Minecraftトークン無効',
+                            ? '有効'
+                            : '無効',
                       ),
                       leading: const Icon(Icons.token),
                     ),

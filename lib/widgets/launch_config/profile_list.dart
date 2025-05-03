@@ -5,6 +5,7 @@ import 'package:karasu_launcher/providers/profiles_provider.dart';
 import 'package:karasu_launcher/widgets/launch_config/profile_card.dart';
 import 'package:karasu_launcher/widgets/launch_config/reorderable_grid_view.dart';
 import 'package:karasu_launcher/widgets/launch_config/profile_filter.dart';
+import 'package:karasu_launcher/widgets/custom_drop_down.dart';
 
 class DefaultProfileList extends ConsumerWidget {
   final List<MapEntry<String, Profile>> profiles;
@@ -27,8 +28,9 @@ class DefaultProfileList extends ConsumerWidget {
       children: [
         Text(
           'Default profile',
-          style: Theme.of(context).textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         SizedBox(
@@ -50,7 +52,8 @@ class DefaultProfileList extends ConsumerWidget {
                     profile: profile,
                     isSelected: profileId == selectedProfileId,
                     onSelected: () {
-                      ref.read(selectedProfileProvider.notifier).state = profileId;
+                      ref.read(selectedProfileProvider.notifier).state =
+                          profileId;
                     },
                     onEdit: null,
                     onDelete: null,
@@ -73,6 +76,7 @@ class CustomProfileList extends ConsumerWidget {
   final void Function(String profileId, Profile profile) onEdit;
   final void Function(String profileId) onDelete;
   final void Function(List<String> orderedIds)? onReorder;
+  final void Function(ProfileSortOption)? onSortOptionChanged;
 
   const CustomProfileList({
     super.key,
@@ -82,6 +86,7 @@ class CustomProfileList extends ConsumerWidget {
     required this.onEdit,
     required this.onDelete,
     this.onReorder,
+    this.onSortOptionChanged,
   });
 
   @override
@@ -90,9 +95,46 @@ class CustomProfileList extends ConsumerWidget {
       return const Center(child: Text('フィルター条件に一致するプロファイルがありません'));
     }
 
-    return sortOption == ProfileSortOption.custom && onReorder != null
-        ? _buildReorderableGrid(context, ref)
-        : _buildRegularGrid(context, ref);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (onSortOptionChanged != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: CustomDropdown<ProfileSortOption>(
+              value: sortOption,
+              items:
+                  ProfileSortOption.values.map((option) {
+                    String label;
+                    switch (option) {
+                      case ProfileSortOption.custom:
+                        label = '名前順';
+                        break;
+                      case ProfileSortOption.lastPlayed:
+                        label = '最終プレイ日時順';
+                        break;
+                      case ProfileSortOption.created:
+                        label = '作成日時順';
+                        break;
+                    }
+                    return DropdownMenuItem<ProfileSortOption>(
+                      value: option,
+                      child: Text(label),
+                    );
+                  }).toList(),
+              onChanged: (value) {
+                if (value != null && onSortOptionChanged != null) {
+                  onSortOptionChanged!(value);
+                }
+              },
+              hint: 'ソート順を選択',
+            ),
+          ),
+        sortOption == ProfileSortOption.custom && onReorder != null
+            ? _buildReorderableGrid(context, ref)
+            : _buildRegularGrid(context, ref),
+      ],
+    );
   }
 
   Widget _buildReorderableGrid(BuildContext context, WidgetRef ref) {
@@ -125,13 +167,28 @@ class CustomProfileList extends ConsumerWidget {
       },
       onReorder: (int oldIndex, int newIndex) {
         if (onReorder != null) {
-          final mutableProfiles = [...profiles];
-          if (oldIndex < newIndex) newIndex -= 1;
-          final item = mutableProfiles.removeAt(oldIndex);
-          mutableProfiles.insert(newIndex, item);
-          
-          final orderedIds = mutableProfiles.map((e) => e.key).toList();
-          onReorder!(orderedIds);
+          if (oldIndex >= 0 && oldIndex < profiles.length && newIndex >= 0) {
+            final List<MapEntry<String, Profile>> mutableProfiles = List.from(
+              profiles,
+            );
+
+            final item = mutableProfiles[oldIndex];
+
+            mutableProfiles.removeAt(oldIndex);
+
+            int insertPosition = newIndex;
+
+            if (insertPosition >= mutableProfiles.length) {
+              insertPosition = mutableProfiles.length;
+            } else if (oldIndex < insertPosition) {
+              insertPosition -= 1;
+            }
+
+            mutableProfiles.insert(insertPosition, item);
+
+            final orderedIds = mutableProfiles.map((e) => e.key).toList();
+            onReorder!(orderedIds);
+          }
         }
       },
     );

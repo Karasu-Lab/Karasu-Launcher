@@ -108,11 +108,6 @@ RouteBase get $mainShellRouteData => StatefulShellRouteData.$route(
 
               factory: $AccountProfileRouteExtension._fromState,
             ),
-            GoRouteData.$route(
-              path: 'sign-out',
-
-              factory: $AccountSignOutRouteExtension._fromState,
-            ),
           ],
         ),
       ],
@@ -331,22 +326,6 @@ extension $AccountProfileRouteExtension on AccountProfileRoute {
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $AccountSignOutRouteExtension on AccountSignOutRoute {
-  static AccountSignOutRoute _fromState(GoRouterState state) =>
-      const AccountSignOutRoute();
-
-  String get location => GoRouteData.$location('/accounts/sign-out');
-
-  void go(BuildContext context) => context.go(location);
-
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  void replace(BuildContext context) => context.replace(location);
-}
-
 RouteBase get $accountHomeRoute => GoRouteData.$route(
   path: '/accounts',
 
@@ -361,11 +340,6 @@ RouteBase get $accountHomeRoute => GoRouteData.$route(
       path: 'profiles/:id',
 
       factory: $AccountProfileRouteExtension._fromState,
-    ),
-    GoRouteData.$route(
-      path: 'sign-out',
-
-      factory: $AccountSignOutRouteExtension._fromState,
     ),
   ],
 );

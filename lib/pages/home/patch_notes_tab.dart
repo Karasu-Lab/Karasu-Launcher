@@ -14,10 +14,18 @@ class _PatchNotesTabState extends State<PatchNotesTab> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     _fetchPatchNotes();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchPatchNotes() async {
@@ -33,6 +41,7 @@ class _PatchNotesTabState extends State<PatchNotesTab> {
       final List<PatchNoteCard> fetchedNotes =
           javaPatchNote.entries.map((entry) {
             return PatchNoteCard(
+              key: ValueKey(entry.version),
               title: entry.title,
               version: entry.version,
               description: entry.body,
@@ -41,11 +50,13 @@ class _PatchNotesTabState extends State<PatchNotesTab> {
             );
           }).toList();
 
-      setState(() {
-        _patchNotes.clear();
-        _patchNotes.addAll(fetchedNotes);
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _patchNotes.clear();
+          _patchNotes.addAll(fetchedNotes);
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -97,6 +108,7 @@ class _PatchNotesTabState extends State<PatchNotesTab> {
     return RefreshIndicator(
       onRefresh: _fetchPatchNotes,
       child: GridView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.all(8.0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
@@ -105,10 +117,8 @@ class _PatchNotesTabState extends State<PatchNotesTab> {
           mainAxisSpacing: 12.0,
         ),
         itemCount: _patchNotes.length,
-        itemBuilder: (context, index) {
-          final patchNote = _patchNotes[index];
-          return patchNote;
-        },
+        itemBuilder: (context, index) => _patchNotes[index],
+        cacheExtent: 500,
       ),
     );
   }

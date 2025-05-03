@@ -50,7 +50,6 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
     final authState = ref.watch(authenticationProvider);
     final activeAccount = ref.watch(activeAccountProvider);
     final accounts = authState.accounts;
-    final isRefreshing = authState.isRefreshing;
     final isOfflineMode = activeAccount == null;
 
     return Scaffold(
@@ -288,38 +287,20 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                             children: [
                               if (isActive == true)
                                 IconButton(
-                                  icon:
-                                      isRefreshing
-                                          ? const SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    Colors.blue,
-                                                  ),
-                                            ),
-                                          )
-                                          : const Icon(Icons.refresh),
-                                  tooltip: isRefreshing ? '更新中...' : 'トークンを更新',
-                                  onPressed:
-                                      isRefreshing
-                                          ? null
-                                          : () async {
-                                            await ref
-                                                .read(
-                                                  authenticationProvider
-                                                      .notifier,
-                                                )
-                                                .refreshActiveAccount();
-                                          },
+                                  icon: const Icon(
+                                    Icons.check_box,
+                                    color: Colors.green,
+                                  ),
+                                  tooltip: 'アクティブなアカウント',
+                                  onPressed: null,
                                 ),
                               if (isActive == false)
                                 IconButton(
-                                  icon: const Icon(Icons.check_circle_outline),
+                                  icon: const Icon(
+                                    Icons.check_box_outline_blank_sharp,
+                                    color: Colors.grey,
+                                  ),
                                   tooltip: 'アクティブにする',
-
                                   onPressed:
                                       _switchingAccountId != null
                                           ? null
@@ -340,7 +321,6 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                                             });
                                           },
                                 ),
-
                               IconButton(
                                 icon: const Icon(
                                   Icons.arrow_forward_ios,

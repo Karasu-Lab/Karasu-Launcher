@@ -91,9 +91,23 @@ class _ReorderableGridViewState extends State<ReorderableGridView> {
               return details.data != index;
             },
             onAcceptWithDetails: (details) {
+              final dragIndex = details.data;
+              final targetIndex = index;
+
+              if (dragIndex >= 0 &&
+                  dragIndex < widget.itemCount &&
+                  targetIndex >= 0 &&
+                  targetIndex < widget.itemCount) {
+                if (dragIndex != targetIndex) {
+                  setState(() {
+                    _hoveredItemIndex = null;
+                    widget.onReorder(dragIndex, targetIndex);
+                  });
+                }
+              }
+
               setState(() {
                 _hoveredItemIndex = null;
-                widget.onReorder(details.data, index);
               });
             },
             onMove: (_) {
