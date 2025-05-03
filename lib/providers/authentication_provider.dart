@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 import '../models/auth/account.dart';
 import '../models/auth/device_code_response.dart';
 import '../models/auth/minecraft_profile.dart';
@@ -70,6 +69,12 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
   AuthenticationNotifier() : super(const AuthenticationState()) {
     _init();
+  }
+
+  Future<void> init() async {
+    if (!state.isInitialized) {
+      await _init();
+    }
   }
 
   Future<void> _init() async {
@@ -572,39 +577,6 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     }
   }
 
-  Future<Account?> silentLogin() async {
-    try {
-      debugPrint('サイレントログインを実行中...');
-      final profile = await _authService.silentLogin();
-
-      if (profile == null) {
-        debugPrint('サイレントログイン失敗: プロファイルが取得できませんでした');
-        return null;
-      }
-
-      final tempMicrosoftAccountId = const Uuid().v4();
-
-      final account = Account(
-        id: tempMicrosoftAccountId,
-        profile: profile,
-        minecraftAccessToken: await _authService.getMinecraftToken(),
-        xboxToken: await _authService.getXboxToken(),
-        minecraftTokenExpiry: DateTime.now().add(const Duration(hours: 24)),
-        xboxTokenExpiry: DateTime.now().add(const Duration(hours: 24)),
-        isActive: true,
-      );
-
-      await _addAccount(tempMicrosoftAccountId, account);
-      await _saveActiveAccountId(tempMicrosoftAccountId);
-
-      debugPrint('サイレントログイン成功: ${profile.name}');
-      return account;
-    } catch (e) {
-      debugPrint('サイレントログイン処理中にエラー: $e');
-      return null;
-    }
-  }
-
   Future<String?> getMinecraftToken() async {
     if (state.activeAccount == null) return null;
 
@@ -663,7 +635,6 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     try {
       debugPrint('このMicrosoftアカウントをサインアウトします: $microsoftAccountId');
 
-      // 指定されたアカウントが存在するか確認
       if (!state.accounts.containsKey(microsoftAccountId)) {
         debugPrint('アカウントが見つかりません: $microsoftAccountId');
         return;
@@ -676,14 +647,11 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
       String? newActiveId;
 
-      // アクティブなアカウントを削除した場合は新しいアクティブアカウントを設定
       if (isActiveAccount) {
         if (updatedAccounts.isNotEmpty) {
-          // 他のアカウントがある場合は最初のアカウントを使用
           newActiveId = updatedAccounts.keys.first;
           debugPrint('新しいアクティブアカウントに切り替え: $newActiveId');
         } else {
-          // 他のアカウントがない場合はオフラインモードに
           newActiveId = null;
           debugPrint('アカウントがないため、オフラインモードに切り替えます');
         }

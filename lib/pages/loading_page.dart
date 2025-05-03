@@ -24,7 +24,6 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
     _initializeApp();
   }
 
-  // インターネット接続をチェックするメソッド
   Future<bool> _checkInternetConnection() async {
     try {
       setState(() {
@@ -50,83 +49,31 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
 
       await ref.read(profilesInitializedProvider.future);
 
-      // インターネット接続チェック
       final hasInternet = await _checkInternetConnection();
 
-      // 認証状態を確認
       setState(() {
         _loadingMessage = '認証状態を確認しています...';
       });
 
-      final authState = ref.read(authenticationProvider);
       final authNotifier = ref.read(authenticationProvider.notifier);
 
-      // インターネット接続がない場合
       if (!hasInternet) {
         setState(() {
           _loadingMessage = 'インターネット接続がありません。オフラインモードで続行します...';
         });
 
-        // オフラインモードに設定
         await authNotifier.clearActiveAccount();
       }
 
       if (hasInternet) {
-        if (authState.activeAccount != null) {
-          setState(() {
-            _loadingMessage =
-                '${authState.activeAccount?.profile?.name ?? "Unknown"}さんとしてログインしています...';
-          });
+        await authNotifier.init();
+        var profile = await authNotifier.refreshActiveAccount();
 
-          try {
-            // アクティブアカウントでログインを試みる
-            final account = await authNotifier.loginWithActiveAccount();
+        setState(() {
+          _loadingMessage = '${profile?.name}としてログインしました。';
+        });
 
-            if (account != null) {
-              setState(() {
-                _loadingMessage = '${account.profile?.name}さんとしてログインしました';
-              });
-              await Future.delayed(const Duration(seconds: 1));
-            } else {
-              // 自動リフレッシュに失敗した場合でも明示的にトークン更新を試みる
-              final profile = await authNotifier.refreshActiveAccount();
-              if (profile != null) {
-                setState(() {
-                  _loadingMessage = '${profile.name}さんとしてログインしました（トークン更新済み）';
-                });
-                await Future.delayed(const Duration(seconds: 1));
-              } else {
-                setState(() {
-                  _loadingMessage = 'アカウントの認証に失敗しました';
-                });
-                await Future.delayed(const Duration(milliseconds: 800));
-              }
-            }
-          } catch (e) {
-            debugPrint('アクティブアカウントログインエラー: $e');
-          }
-        }
-        // アカウントがない場合はサイレントログインを試みる
-        else if (authState.accounts.isEmpty) {
-          setState(() {
-            _loadingMessage = 'サイレントログインを試みています...';
-          });
-
-          try {
-            final account = await authNotifier.silentLogin();
-
-            if (account != null) {
-              setState(() {
-                _loadingMessage = '${account.profile?.name}さんとして自動ログインしました';
-              });
-              await Future.delayed(const Duration(seconds: 1));
-            } else {
-              await Future.delayed(const Duration(milliseconds: 500));
-            }
-          } catch (e) {
-            debugPrint('サイレントログインエラー: $e');
-          }
-        }
+        await Future.delayed(const Duration(seconds: 1));
       }
 
       setState(() {
@@ -144,11 +91,13 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
       await Future.delayed(const Duration(seconds: 2));
     }
 
-    if (mounted && !_hasError) {
+    if (!mounted) return;
+
+    if (!_hasError) {
       context.go('/minecraft');
-    } else if (mounted) {
-      // エラーが発生した場合でも最終的にはメイン画面に移動
+    } else {
       await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
       context.go('/minecraft');
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:karasu_launcher/models/auth/account.dart';
 import 'package:karasu_launcher/widgets/minecraft_face.dart';
 import '../../providers/authentication_provider.dart';
 
@@ -43,6 +44,239 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
     setState(() {
       _switchingAccountId = null;
     });
+  }
+
+  Decoration _getBorderDecoration(bool isActive, bool isSwitching) {
+    if (isSwitching) {
+      final double animValue = _animationController.value;
+      return BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.lerp(Colors.blue, Colors.green, animValue) ?? Colors.blue,
+            Color.lerp(Colors.green, Colors.blue, animValue) ?? Colors.green,
+          ],
+        ),
+        border: Border.all(width: 2, color: Colors.transparent),
+      );
+    } else if (isActive) {
+      return BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue, width: 2),
+      );
+    } else {
+      return BoxDecoration(borderRadius: BorderRadius.circular(12));
+    }
+  }
+
+  Widget _buildAccountCard(Account account, bool isActive, int index) {
+    final isSwitching = _switchingAccountId == account.id;
+
+    Widget card;
+
+    if (isSwitching) {
+      card = AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return _buildCardWithDecoration(
+            account,
+            isActive,
+            isSwitching,
+            index,
+          );
+        },
+      );
+    } else {
+      card = _buildCardWithDecoration(account, isActive, isSwitching, index);
+    }
+
+    return KeyedSubtree(key: ValueKey(account.id), child: card);
+  }
+
+  Widget _buildCardWithDecoration(
+    Account account,
+    bool isActive,
+    bool isSwitching,
+    int index,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: _getBorderDecoration(isActive, isSwitching),
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: isActive ? 4 : 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        clipBehavior: Clip.antiAlias,
+        child: MouseRegion(
+          cursor:
+              isActive || _switchingAccountId != null
+                  ? SystemMouseCursors.basic
+                  : SystemMouseCursors.click,
+          child: ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            onTap:
+                isActive || _switchingAccountId != null
+                    ? null
+                    : () async {
+                      setState(() {
+                        _switchingAccountId = account.id;
+                      });
+
+                      await ref
+                          .read(authenticationProvider.notifier)
+                          .setActiveAccount(account.id);
+
+                      setState(() {
+                        _switchingAccountId = null;
+                      });
+                    },
+            onLongPress: () {
+              context.go('/accounts/profiles/${account.id}');
+            },
+            leading: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(
+                    Icons.drag_handle,
+                    color: Colors.grey,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                isSwitching
+                    ? SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    )
+                    : account.profile?.skinUrl != null
+                    ? SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: MinecraftFace.network(
+                        account.profile!.skinUrl!,
+                        size: 32,
+                        key: ValueKey('face_list_${account.id}'),
+                      ),
+                    )
+                    : const CircleAvatar(child: Icon(Icons.person)),
+              ],
+            ),
+            title: Text(
+              account.profile?.name ?? 'Unknown',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(
+                  isActive ? 'アクティブなアカウント' : '',
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  account.hasValidMinecraftToken ? '認証済み' : 'トークン期限切れ',
+                  style: TextStyle(
+                    color:
+                        account.hasValidMinecraftToken
+                            ? Colors.green
+                            : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.blue, size: 20),
+                  tooltip: 'トークンを更新',
+                  onPressed:
+                      _switchingAccountId != null
+                          ? null
+                          : () async {
+                            setState(() {
+                              _switchingAccountId = account.id;
+                            });
+
+                            if (!isActive) {
+                              await ref
+                                  .read(authenticationProvider.notifier)
+                                  .setActiveAccount(account.id);
+                            }
+
+                            await ref
+                                .read(authenticationProvider.notifier)
+                                .refreshActiveAccount();
+
+                            setState(() {
+                              _switchingAccountId = null;
+                            });
+                          },
+                ),
+                if (isActive == true)
+                  IconButton(
+                    icon: const Icon(Icons.check_box, color: Colors.green),
+                    tooltip: 'アクティブなアカウント',
+                    onPressed: null,
+                  ),
+                if (isActive == false)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.check_box_outline_blank_sharp,
+                      color: Colors.grey,
+                    ),
+                    tooltip: 'アクティブにする',
+                    onPressed:
+                        _switchingAccountId != null
+                            ? null
+                            : () async {
+                              setState(() {
+                                _switchingAccountId = account.id;
+                              });
+
+                              await ref
+                                  .read(authenticationProvider.notifier)
+                                  .setActiveAccount(account.id);
+
+                              setState(() {
+                                _switchingAccountId = null;
+                              });
+                            },
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward_ios, size: 18),
+                  tooltip: 'プロフィール詳細',
+                  onPressed: () {
+                    context.go('/accounts/profiles/${account.id}');
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -171,173 +405,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                     final isActive =
                         activeAccount != null && account.id == activeAccount.id;
 
-                    return Card(
-                      key: ValueKey(account.id),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      elevation: isActive ? 4 : 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side:
-                            _switchingAccountId == account.id
-                                ? BorderSide(
-                                  color:
-                                      HSVColor.fromAHSV(
-                                        1.0,
-                                        (_animationController.value * 360) %
-                                            360,
-                                        1.0,
-                                        1.0,
-                                      ).toColor(),
-                                  width: 2,
-                                )
-                                : isActive
-                                ? const BorderSide(color: Colors.blue, width: 2)
-                                : BorderSide.none,
-                      ),
-                      child: MouseRegion(
-                        cursor:
-                            isActive || _switchingAccountId != null
-                                ? SystemMouseCursors.basic
-                                : SystemMouseCursors.click,
-                        child: ListTile(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          onTap:
-                              isActive || _switchingAccountId != null
-                                  ? null
-                                  : () async {
-                                    setState(() {
-                                      _switchingAccountId = account.id;
-                                    });
-
-                                    await ref
-                                        .read(authenticationProvider.notifier)
-                                        .setActiveAccount(account.id);
-
-                                    setState(() {
-                                      _switchingAccountId = null;
-                                    });
-                                  },
-                          onLongPress: () {
-                            context.go('/accounts/profiles/${account.id}');
-                          },
-                          leading: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ReorderableDragStartListener(
-                                index: index,
-                                child: const Icon(
-                                  Icons.drag_handle,
-                                  color: Colors.grey,
-                                  size: 22,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              account.profile?.skinUrl != null
-                                  ? SizedBox(
-                                    width: 32,
-                                    height: 32,
-                                    child: MinecraftFace.network(
-                                      account.profile!.skinUrl!,
-                                    ),
-                                  )
-                                  : const CircleAvatar(
-                                    child: Icon(Icons.person),
-                                  ),
-                            ],
-                          ),
-                          title: Text(
-                            account.profile?.name ?? 'Unknown',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 4),
-                              Text(
-                                isActive ? 'アクティブなアカウント' : '',
-                                style: const TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                account.hasValidMinecraftToken
-                                    ? '認証済み'
-                                    : 'トークン期限切れ',
-                                style: TextStyle(
-                                  color:
-                                      account.hasValidMinecraftToken
-                                          ? Colors.green
-                                          : Colors.red,
-                                ),
-                              ),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (isActive == true)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.check_box,
-                                    color: Colors.green,
-                                  ),
-                                  tooltip: 'アクティブなアカウント',
-                                  onPressed: null,
-                                ),
-                              if (isActive == false)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.check_box_outline_blank_sharp,
-                                    color: Colors.grey,
-                                  ),
-                                  tooltip: 'アクティブにする',
-                                  onPressed:
-                                      _switchingAccountId != null
-                                          ? null
-                                          : () async {
-                                            setState(() {
-                                              _switchingAccountId = account.id;
-                                            });
-
-                                            await ref
-                                                .read(
-                                                  authenticationProvider
-                                                      .notifier,
-                                                )
-                                                .setActiveAccount(account.id);
-
-                                            setState(() {
-                                              _switchingAccountId = null;
-                                            });
-                                          },
-                                ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 18,
-                                ),
-                                tooltip: 'プロフィール詳細',
-                                onPressed: () {
-                                  context.go(
-                                    '/accounts/profiles/${account.id}',
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
+                    return _buildAccountCard(account, isActive, index);
                   },
                 ),
               ),

@@ -14,10 +14,8 @@ import '../models/auth/xbox_profile.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthenticationService {
-  // クライアントID
   static final String _clientId = dotenv.get('MICROSOFT_CLIENT_ID');
 
-  // シングルトンインスタンス
   static final AuthenticationService _instance =
       AuthenticationService._internal();
 
@@ -27,14 +25,11 @@ class AuthenticationService {
 
   AuthenticationService._internal();
 
-  // アクセストークンのキャッシュ
   String? _minecraftAccessToken;
   DateTime? _minecraftTokenExpiry;
 
-  // Microsoftリフレッシュトークンのキャッシュ
   String? _msRefreshToken;
 
-  // Xboxトークンのキャッシュ
   String? _xboxToken;
   DateTime? _xboxTokenExpiry;
 
@@ -231,8 +226,7 @@ class AuthenticationService {
       debugPrint('UHS: $uhs');
       debugPrint('XSTS Token: $xstsToken');
 
-      // XuidをDisplayClaimsから直接取得
-      final xuid = uhs; // UHSはXuidとして利用可能
+      final xuid = uhs;
       if (xuid.isNotEmpty) {
         debugPrint('Extracted Xuid: $xuid');
         return xuid;
@@ -245,7 +239,6 @@ class AuthenticationService {
     }
   }
 
-  /// Minecraftアクセストークンを取得する
   /// Minecraftアクセストークンを取得する
   Future<MinecraftTokenResponse> getMinecraftAccessToken(
     String uhs,
@@ -265,7 +258,6 @@ class AuthenticationService {
           jsonDecode(response.body),
         );
 
-        // トークンをキャッシュに保存
         _cacheMinecraftToken(
           tokenResponse.accessToken,
           tokenResponse.expiresIn,
@@ -342,117 +334,80 @@ class AuthenticationService {
 
   /// 認証フローを完了する
   Future<MinecraftProfile> completeAuthFlow() async {
-    // Device Codeを取得
     final deviceCodeResponse = await getMicrosoftDeviceCode();
 
-    // ユーザーに表示するコード情報を返す
     debugPrint(
       'Please go to ${deviceCodeResponse.verificationUri} and enter code: ${deviceCodeResponse.userCode}',
     );
 
-    // トークン取得をポーリング
     final msTokenResponse = await pollForMicrosoftToken(
       deviceCodeResponse.deviceCode,
     );
 
-    // Microsoftリフレッシュトークンをキャッシュ
     _cacheMicrosoftRefreshToken(msTokenResponse.refreshToken);
 
-    // Xbox Live認証
     final xboxLiveResponse = await authenticateWithXboxLive(
       msTokenResponse.accessToken,
     );
 
-    // Xboxトークンをメモリキャッシュに保存
-    _cacheXboxToken(xboxLiveResponse.token, 86400); // 24時間（秒単位）
+    _cacheXboxToken(xboxLiveResponse.token, 86400);
 
-    // XSTSトークン取得
     final xstsResponse = await getXstsToken(xboxLiveResponse.token);
 
-    // Minecraftアクセストークン取得
     final minecraftToken = await getMinecraftAccessToken(
       xstsResponse.displayClaims.xui[0].uhs,
       xstsResponse.token,
     );
 
-    // Minecraftトークンをメモリキャッシュに保存
-    _cacheMinecraftToken(
-      minecraftToken.accessToken,
-      minecraftToken.expiresIn,
-    );
+    _cacheMinecraftToken(minecraftToken.accessToken, minecraftToken.expiresIn);
 
-    // 所有権チェック
     final hasGame = await checkMinecraftOwnership(minecraftToken.accessToken);
     if (!hasGame) {
       throw Exception('Minecraft: Java Editionを所有していません');
     }
 
-    // プロファイル情報を取得して返す
     return await getMinecraftProfile(minecraftToken.accessToken);
   }
 
   /// リフレッシュトークンを使ってMinecraftプロファイルを取得する
   Future<MinecraftProfile?> getProfileWithSavedToken() async {
     try {
-      // getMinecraftTokenを使用して有効なトークンを取得
       final accessToken = await getMinecraftToken();
 
       if (accessToken != null) {
         debugPrint('既存のトークンを使用してプロファイル取得');
-        // 所有権チェック
         final hasGame = await checkMinecraftOwnership(accessToken);
         if (!hasGame) {
           throw Exception('Minecraft: Java Editionを所有していません');
         }
 
-        // プロファイル情報を取得して返す
         return await getMinecraftProfile(accessToken);
       }
 
-      // Microsoftリフレッシュトークンを確認
       if (_msRefreshToken != null) {
         debugPrint('Microsoftリフレッシュトークンで認証フロー再実行');
-        // 新しいアクセストークンを取得
         final newToken = await _refreshFullAuthFlow(_msRefreshToken!);
 
         if (newToken != null) {
-          // 所有権チェック
           final hasGame = await checkMinecraftOwnership(newToken);
           if (!hasGame) {
             throw Exception('Minecraft: Java Editionを所有していません');
           }
 
-          // プロファイル情報を取得して返す
           return await getMinecraftProfile(newToken);
         }
       }
     } catch (e) {
       debugPrint('Error getting profile with saved token: $e');
-      // トークン無効化、再認証が必要
       _clearCache();
     }
 
-    return null; // 認証が必要
+    return null;
   }
 
-  /// Minecraftのアクセストークンを取得（アクティブなアカウント優先）
-  Future<String?> getMinecraftToken() async {
+  /// Minecraftのアクセストークンを取得
+  Future<String?> getMinecraftToken({String? uhs, String? xstsToken}) async {
     try {
-      // 優先順位1: アクティブなアカウントからトークンを取得
-      try {
-        final container = ProviderContainer();
-        final authNotifier = container.read(authenticationProvider.notifier);
-        final token = await authNotifier.getAccessTokenForService();
-        if (token != null) {
-          debugPrint('アクティブなアカウントからトークンを取得しました');
-          return token;
-        }
-      } catch (e) {
-        debugPrint('アクティブアカウントからトークン取得中のエラー: $e');
-        // エラーが発生しても続行し、他の方法でトークンを取得
-      }
-
-      // 優先順位2: キャッシュされたトークンを確認
       if (_minecraftAccessToken != null &&
           _minecraftTokenExpiry != null &&
           _minecraftTokenExpiry!.isAfter(DateTime.now())) {
@@ -461,8 +416,13 @@ class AuthenticationService {
       }
 
       debugPrint('キャッシュされたMinecraftトークンが無効か期限切れです');
-      
-      // リフレッシュトークンがあればリフレッシュを試みる
+
+      if (uhs != null && xstsToken != null) {
+        debugPrint('指定されたXSTSトークンを使用してMinecraftトークンを取得');
+        final minecraftToken = await getMinecraftAccessToken(uhs, xstsToken);
+        return minecraftToken.accessToken;
+      }
+
       if (_msRefreshToken != null) {
         debugPrint('Microsoftリフレッシュトークンを使って再認証');
         return await _refreshFullAuthFlow(_msRefreshToken!);
@@ -472,7 +432,7 @@ class AuthenticationService {
     }
 
     debugPrint('有効なトークンがありません。ログインが必要です。');
-    return null; // トークンが利用できないか期限切れ
+    return null;
   }
 
   /// 完全な認証フローを再実行してトークンを更新
@@ -480,22 +440,19 @@ class AuthenticationService {
     try {
       final msTokenResponse = await refreshMicrosoftToken(refreshToken);
 
-      // 新しいリフレッシュトークンをキャッシュ
       _cacheMicrosoftRefreshToken(msTokenResponse.refreshToken);
 
       final xboxLiveResponse = await authenticateWithXboxLive(
         msTokenResponse.accessToken,
       );
 
-      // Xboxトークンをキャッシュ（有効期限は近似値として1日を設定）
-      _cacheXboxToken(xboxLiveResponse.token, 86400); // 24時間（秒単位）
+      _cacheXboxToken(xboxLiveResponse.token, 86400);
 
       final xstsResponse = await getXstsToken(xboxLiveResponse.token);
       final minecraftToken = await getMinecraftAccessToken(
         xstsResponse.displayClaims.xui[0].uhs,
         xstsResponse.token,
       );
-      // トークンをキャッシュに保存
       _cacheMinecraftToken(
         minecraftToken.accessToken,
         minecraftToken.expiresIn,
@@ -510,52 +467,96 @@ class AuthenticationService {
   }
 
   /// サイレントログインを試みる
-  /// キャッシュされたトークンを使用して自動的に認証を試みる
-  Future<MinecraftProfile?> silentLogin() async {
+  Future<MinecraftProfile?> silentLogin({
+    String? uhs,
+    String? xstsToken,
+  }) async {
     try {
       debugPrint('サイレントログインを試みています...');
 
-      // まず既に有効なMinecraftトークンがあるか確認
+      if (uhs != null && xstsToken != null) {
+        debugPrint('指定されたXSTSトークンを使用してサイレントログイン試行中...');
+        try {
+          final minecraftToken = await getMinecraftAccessToken(uhs, xstsToken);
+
+          _cacheMinecraftToken(
+            minecraftToken.accessToken,
+            minecraftToken.expiresIn,
+          );
+
+          final hasGame = await checkMinecraftOwnership(
+            minecraftToken.accessToken,
+          );
+          if (!hasGame) {
+            throw Exception('Minecraft: Java Editionを所有していません');
+          }
+
+          return await getMinecraftProfile(minecraftToken.accessToken);
+        } catch (e) {
+          debugPrint('指定されたXSTSトークンでのログイン失敗: $e');
+        }
+      }
+
       final minecraftToken = await getMinecraftToken();
       if (minecraftToken != null) {
         debugPrint('有効なMinecraftトークンでプロファイル取得');
 
-        // 所有権チェック
         final hasGame = await checkMinecraftOwnership(minecraftToken);
         if (!hasGame) {
           throw Exception('Minecraft: Java Editionを所有していません');
         }
 
-        // プロファイル情報を取得して返す
         return await getMinecraftProfile(minecraftToken);
       }
 
-      // キャッシュされたMicrosoftリフレッシュトークンを確認
       if (_msRefreshToken == null) {
         debugPrint('キャッシュされたMicrosoftリフレッシュトークンがありません');
         return null;
       }
 
       debugPrint('Microsoftリフレッシュトークンを使用して認証フロー再実行');
-      // 完全な認証フローを再実行
       final newToken = await _refreshFullAuthFlow(_msRefreshToken!);
 
       if (newToken != null) {
-        // 所有権チェック
         final hasGame = await checkMinecraftOwnership(newToken);
         if (!hasGame) {
           throw Exception('Minecraft: Java Editionを所有していません');
         }
 
-        // プロファイル情報を取得して返す
         return await getMinecraftProfile(newToken);
       }
 
       return null;
     } catch (e) {
       debugPrint('サイレントログイン失敗: $e');
-      // エラーが発生した場合はキャッシュをクリア
       _clearCache();
+      return null;
+    }
+  }
+
+  /// XSTSトークンを使用してサイレントログインを試みる
+  Future<MinecraftProfile?> silentLoginWithXsts(
+    String uhs,
+    String xstsToken,
+  ) async {
+    try {
+      debugPrint('XSTSトークンを使用したサイレントログインを試みています...');
+
+      final minecraftToken = await getMinecraftAccessToken(uhs, xstsToken);
+
+      _cacheMinecraftToken(
+        minecraftToken.accessToken,
+        minecraftToken.expiresIn,
+      );
+
+      final hasGame = await checkMinecraftOwnership(minecraftToken.accessToken);
+      if (!hasGame) {
+        throw Exception('Minecraft: Java Editionを所有していません');
+      }
+
+      return await getMinecraftProfile(minecraftToken.accessToken);
+    } catch (e) {
+      debugPrint('XSTSトークンによるサイレントログイン失敗: $e');
       return null;
     }
   }
@@ -589,14 +590,12 @@ class AuthenticationService {
   /// Xboxトークンを取得する
   Future<String?> getXboxToken() async {
     try {
-      // キャッシュされたトークンを確認
       if (_xboxToken != null &&
           _xboxTokenExpiry != null &&
           _xboxTokenExpiry!.isAfter(DateTime.now())) {
         return _xboxToken;
       }
 
-      // トークンが期限切れなのでリフレッシュを試みる
       if (_msRefreshToken != null) {
         return await _refreshXboxToken(_msRefreshToken!);
       }
@@ -604,25 +603,21 @@ class AuthenticationService {
       debugPrint('Error getting Xbox token: $e');
     }
 
-    return null; // トークンが利用できないか期限切れ
+    return null;
   }
 
   /// Xboxトークンをリフレッシュする
   Future<String?> _refreshXboxToken(String refreshToken) async {
     try {
-      // Microsoftトークンをリフレッシュ
       final msTokenResponse = await refreshMicrosoftToken(refreshToken);
 
-      // リフレッシュトークンをキャッシュ（更新されている可能性があるため）
       _cacheMicrosoftRefreshToken(msTokenResponse.refreshToken);
 
-      // Xbox Live認証
       final xboxLiveResponse = await authenticateWithXboxLive(
         msTokenResponse.accessToken,
       );
 
-      // Xboxトークンをキャッシュ（有効期限は近似値として1日を設定）
-      _cacheXboxToken(xboxLiveResponse.token, 86400); // 24時間（秒単位）
+      _cacheXboxToken(xboxLiveResponse.token, 86400);
 
       return xboxLiveResponse.token;
     } catch (e) {
@@ -643,10 +638,8 @@ class AuthenticationService {
   }
 
   /// アクティブなアカウントからMinecraftトークンを取得する
-  /// AuthenticationNotifierと連携して使用する
   Future<String?> getActiveAccountToken() async {
     try {
-      // Providerからアクティブなアカウント情報を取得（グローバルProviderコンテナを使用）
       final container = ProviderContainer();
       final authState = container.read(authenticationProvider);
       final activeAccount = authState.activeAccount;
@@ -656,7 +649,6 @@ class AuthenticationService {
         return null;
       }
 
-      // アカウントが有効なトークンを持っているか確認
       if (activeAccount.hasValidMinecraftToken) {
         debugPrint(
           'アクティブなアカウントから有効なトークンを取得: ${activeAccount.profile?.name ?? "Unknown"}',
@@ -664,16 +656,13 @@ class AuthenticationService {
         return activeAccount.minecraftAccessToken;
       }
 
-      // リフレッシュを試みる
       if (activeAccount.hasRefreshToken) {
         debugPrint('アクティブなアカウントのトークンを更新します');
-        // リフレッシュトークンを使ってトークンを更新
         final profile =
             await container
                 .read(authenticationProvider.notifier)
                 .refreshActiveAccount();
         if (profile != null) {
-          // 更新後のアクティブアカウントからトークンを取得
           final updatedAuthState = container.read(authenticationProvider);
           final updatedAccount = updatedAuthState.activeAccount;
           if (updatedAccount?.hasValidMinecraftToken ?? false) {

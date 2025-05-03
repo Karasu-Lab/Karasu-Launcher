@@ -8,7 +8,10 @@ class MinecraftFace extends StatelessWidget {
   final ImageProvider imageProvider;
   final double size;
   final bool showOverlay;
-
+  
+  // 画像キャッシュの実装
+  static final Map<String, ui.Image> _imageCache = {};
+  
   /// コンストラクタ
   ///
   /// [imageProvider] スキン画像のプロバイダー（ネットワーク、アセット、メモリ等）
@@ -70,6 +73,20 @@ class MinecraftFace extends StatelessWidget {
     );
   }
 
+  /// 画像プロバイダーからキャッシュキーを生成
+  String _getCacheKey(ImageProvider provider) {
+    if (provider is NetworkImage) {
+      return 'network_${provider.url}';
+    } else if (provider is AssetImage) {
+      return 'asset_${provider.assetName}';
+    } else if (provider is MemoryImage) {
+      // メモリイメージの場合はバイト配列のハッシュコードを使用
+      return 'memory_${provider.bytes.hashCode}';
+    }
+    // その他のプロバイダーの場合はオブジェクトのハッシュコード
+    return 'other_${provider.hashCode}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -108,13 +125,22 @@ class MinecraftFace extends StatelessWidget {
     );
   }
 
-  /// 画像を非同期で読み込む
+  /// 画像を非同期で読み込む（キャッシュ対応）
   Future<ui.Image> _loadImage(ImageProvider provider) async {
+    final String cacheKey = _getCacheKey(provider);
+    
+    // キャッシュにある場合はそれを返す
+    if (_imageCache.containsKey(cacheKey)) {
+      return _imageCache[cacheKey]!;
+    }
+    
     final Completer<ui.Image> completer = Completer<ui.Image>();
     final ImageStream stream = provider.resolve(ImageConfiguration.empty);
 
     final ImageStreamListener listener = ImageStreamListener(
       (ImageInfo info, bool _) {
+        // 画像をキャッシュに保存
+        _imageCache[cacheKey] = info.image;
         completer.complete(info.image);
       },
       onError: (dynamic exception, StackTrace? stackTrace) {
@@ -124,6 +150,11 @@ class MinecraftFace extends StatelessWidget {
 
     stream.addListener(listener);
     return completer.future;
+  }
+  
+  /// キャッシュをクリア
+  static void clearCache() {
+    _imageCache.clear();
   }
 }
 
