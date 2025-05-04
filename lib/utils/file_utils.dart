@@ -7,7 +7,7 @@ Future<Directory> getAppDirectory() async {
     final appDocDir = await getApplicationDocumentsDirectory();
     return Directory(appDocDir.path.replaceAll('\\', '/'));
   } catch (e) {
-    throw Exception('アプリケーションディレクトリの取得に失敗しました: $e');
+    throw Exception('Failed to get application directory: $e');
   }
 }
 
@@ -25,7 +25,7 @@ Future<Directory> createAppDirectory() async {
 
     return karasuDir;
   } catch (e) {
-    throw Exception('アプリケーションディレクトリの作成に失敗しました: $e');
+    throw Exception('Failed to create application directory: $e');
   }
 }
 

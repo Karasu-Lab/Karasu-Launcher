@@ -6,6 +6,8 @@ import 'package:karasu_launcher/providers/authentication_provider.dart';
 import 'dart:io';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:karasu_launcher/widgets/minecraft_face.dart';
+import 'package:karasu_launcher/widgets/window_buttons.dart';
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 
 class LoadingPage extends ConsumerStatefulWidget {
   const LoadingPage({super.key});
@@ -161,74 +163,94 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _showMinecraftFace && _skinUrl != null
-                ? SizedBox(
-                  width: _iconSize / 1.5,
-                  height: _iconSize / 1.5,
-                  child: MinecraftFace.network(
-                    _skinUrl!,
-                    size: _iconSize / 1.5,
-                    showOverlay: true,
-                  ),
-                )
-                : Image.asset(
-                  'assets/images/logo.png',
-                  width: _iconSize,
-                  errorBuilder:
-                      (context, error, stackTrace) => Icon(
-                        Icons.launch,
-                        size: _iconSize * 0.53,
-                        color: Colors.white,
+      body: Column(
+        children: [
+          WindowTitleBarBox(
+            child: Container(
+              color: Colors.transparent,
+              child: Row(
+                children: [
+                  Expanded(child: MoveWindow()),
+                  const WindowButtons(),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _showMinecraftFace && _skinUrl != null
+                      ? SizedBox(
+                        width: _iconSize / 1.5,
+                        height: _iconSize / 1.5,
+                        child: MinecraftFace.network(
+                          _skinUrl!,
+                          size: _iconSize / 1.5,
+                          showOverlay: true,
+                        ),
+                      )
+                      : Image.asset(
+                        'assets/images/logo.png',
+                        width: _iconSize,
+                        errorBuilder:
+                            (context, error, stackTrace) => Icon(
+                              Icons.launch,
+                              size: _iconSize * 0.53,
+                              color: Colors.white,
+                            ),
                       ),
-                ),
-            const SizedBox(height: 24),
-            Text(
-              _showMinecraftFace && _profileName != null
-                  ? _profileName!
-                  : 'Karasu Launcher',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 48),
-            const CircularProgressIndicator(color: Colors.white),
-            const SizedBox(height: 24),
-            Text(
-              _loadingMessage,
-              style: const TextStyle(fontSize: 16, color: Colors.white70),
-            ),
-            const SizedBox(height: 8),
-            Consumer(
-              builder: (context, ref, child) {
-                final isLoading = ref.watch(profilesLoadingProvider);
-                return Visibility(
-                  visible: isLoading,
-                  child: Text(
-                    FlutterI18n.translate(
-                      context,
-                      'loadingPage.fetchingProfiles',
+                  const SizedBox(height: 24),
+                  Text(
+                    _showMinecraftFace && _profileName != null
+                        ? _profileName!
+                        : 'Karasu Launcher',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    style: const TextStyle(fontSize: 12, color: Colors.white60),
                   ),
-                );
-              },
-            ),
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                _errorMessage!,
-                style: TextStyle(fontSize: 14, color: Colors.red[300]),
-                textAlign: TextAlign.center,
+                  const SizedBox(height: 48),
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 24),
+                  Text(
+                    _loadingMessage,
+                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 8),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final isLoading = ref.watch(profilesLoadingProvider);
+                      return Visibility(
+                        visible: isLoading,
+                        child: Text(
+                          FlutterI18n.translate(
+                            context,
+                            'loadingPage.fetchingProfiles',
+                          ),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white60,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      _errorMessage!,
+                      style: TextStyle(fontSize: 14, color: Colors.red[300]),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }

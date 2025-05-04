@@ -282,7 +282,7 @@
     "aboutPage": {
         "title": "このアプリについて",
         "version": "バージョン: {version}",
-        "appDescription": "アプリについて",
+        "appDescription": "このアプリについて",
         "readme": "README",
         "links": {
             "github": "GitHub",
