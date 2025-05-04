@@ -26,8 +26,6 @@ Karasu Launcher is a application designed to easily launch and manage Minecraft 
 
 ## How to Use
 
-**Note:** Authentication feature is currently under development.
-
 1. Launch the application
 2. Login with your Minecraft account
 3. Configure mods and servers as needed

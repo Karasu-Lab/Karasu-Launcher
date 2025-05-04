@@ -3,13 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:karasu_launcher/pages/about/about_home_page.dart';
 import 'package:karasu_launcher/pages/mod/curseforge_page.dart';
-import 'package:karasu_launcher/pages/github_page.dart';
 import 'package:karasu_launcher/pages/mod/mod_page.dart';
 import 'package:karasu_launcher/pages/mod/modrinth_page.dart';
 import 'package:karasu_launcher/pages/server_page.dart';
-import 'package:karasu_launcher/pages/social/social_home_page.dart';
-import 'package:karasu_launcher/pages/social/twitter_page.dart';
 import 'package:karasu_launcher/widgets/window_buttons.dart';
 import 'package:karasu_launcher/widgets/animated_side_menu.dart';
 import 'package:karasu_launcher/widgets/side_menu_toggle_button.dart';
@@ -27,7 +25,7 @@ part 'branch/home_branch.dart';
 part 'branch/setting_branch.dart';
 part 'branch/mod_branch.dart';
 part 'branch/server_branch.dart';
-part 'branch/social_branch.dart';
+part 'branch/about_branch.dart';
 part 'branch/account_branch.dart';
 part 'branch/taskmanager_branch.dart';
 
@@ -52,7 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     settingStatefulShellBranch,
     modStatefulShellBranch,
     serverStatefulShellBranch,
-    socialStatefulShellBranch,
+    aboutStatefulShellBranch,
     accountStatefulShellBranch,
     taskManagerStatefulShellBranch,
   ],

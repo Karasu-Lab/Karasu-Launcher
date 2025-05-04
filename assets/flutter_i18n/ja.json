@@ -275,8 +275,19 @@
         "taskManager": "タスクマネージャー",
         "accounts": "アカウント",
         "settings": "設定",
+        "about": "このアプリについて",
         "openMenu": "メニューを開く",
         "closeMenu": "メニューを閉じる"
+    },
+    "aboutPage": {
+        "title": "このアプリについて",
+        "version": "バージョン: {version}",
+        "appDescription": "アプリについて",
+        "readme": "README",
+        "links": {
+            "github": "GitHub",
+            "twitter": "Twitter"
+        }
     },
     "settingsPage": {
         "title": "設定",

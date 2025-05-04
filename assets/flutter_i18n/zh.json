@@ -275,8 +275,19 @@
         "taskManager": "任务管理器",
         "accounts": "账户",
         "settings": "设置",
+        "about": "关于此应用",
         "openMenu": "打开菜单",
         "closeMenu": "关闭菜单"
+    },
+    "aboutPage": {
+        "title": "关于此应用",
+        "version": "版本: {version}",
+        "appDescription": "应用说明",
+        "readme": "README",
+        "links": {
+            "github": "GitHub",
+            "twitter": "Twitter"
+        }
     },
     "settingsPage": {
         "title": "设置",

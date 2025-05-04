@@ -36,6 +36,7 @@ dependencies:
   image_clipboard: ^1.1.0+1
   skeletonizer: ^1.4.3
   flutter_i18n: ^0.36.2
+  flutter_markdown: ^0.7.7
 
 dev_dependencies:
   flutter_test:
@@ -50,3 +51,6 @@ flutter:
   assets:
   - .env
   - assets/flutter_i18n/
+  - README.md
+  - README.ja.md
+  - README.zh.md

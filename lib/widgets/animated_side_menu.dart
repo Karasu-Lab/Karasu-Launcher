@@ -132,14 +132,9 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
                       path: '/settings',
                     ),
                     _buildMenuItem(
-                      BoxIcons.bxl_github,
-                      'GitHub',
-                      path: '/social/github',
-                    ),
-                    _buildMenuItem(
-                      BoxIcons.bxl_twitter,
-                      'Twitter',
-                      path: '/social/twitter',
+                      Icons.info_outline,
+                      FlutterI18n.translate(context, "sideMenu.about"),
+                      path: '/about',
                     ),
                     const SizedBox(height: 16),
                   ],

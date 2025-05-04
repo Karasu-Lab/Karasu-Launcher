@@ -62,21 +62,9 @@ RouteBase get $mainShellRouteData => StatefulShellRouteData.$route(
     StatefulShellBranchData.$branch(
       routes: [
         GoRouteData.$route(
-          path: '/social',
+          path: '/about',
 
-          factory: $SocialBaseRouteExtension._fromState,
-          routes: [
-            GoRouteData.$route(
-              path: 'twitter',
-
-              factory: $TwitterPageRouteExtension._fromState,
-            ),
-            GoRouteData.$route(
-              path: 'github',
-
-              factory: $GitHubPageRouteExtension._fromState,
-            ),
-          ],
+          factory: $AboutBaseRouteExtension._fromState,
         ),
       ],
     ),
@@ -213,43 +201,11 @@ extension $ServerPageRouteExtension on ServerPageRoute {
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $SocialBaseRouteExtension on SocialBaseRoute {
-  static SocialBaseRoute _fromState(GoRouterState state) =>
-      const SocialBaseRoute();
+extension $AboutBaseRouteExtension on AboutBaseRoute {
+  static AboutBaseRoute _fromState(GoRouterState state) =>
+      const AboutBaseRoute();
 
-  String get location => GoRouteData.$location('/social');
-
-  void go(BuildContext context) => context.go(location);
-
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  void replace(BuildContext context) => context.replace(location);
-}
-
-extension $TwitterPageRouteExtension on TwitterPageRoute {
-  static TwitterPageRoute _fromState(GoRouterState state) =>
-      const TwitterPageRoute();
-
-  String get location => GoRouteData.$location('/social/twitter');
-
-  void go(BuildContext context) => context.go(location);
-
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  void replace(BuildContext context) => context.replace(location);
-}
-
-extension $GitHubPageRouteExtension on GitHubPageRoute {
-  static GitHubPageRoute _fromState(GoRouterState state) =>
-      const GitHubPageRoute();
-
-  String get location => GoRouteData.$location('/social/github');
+  String get location => GoRouteData.$location('/about');
 
   void go(BuildContext context) => context.go(location);
 
