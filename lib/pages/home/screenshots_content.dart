@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:karasu_launcher/models/screenshot.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
 import 'package:karasu_launcher/providers/screenshots_provider.dart';
@@ -176,7 +177,11 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
     }
 
     if (_screenshotsByProfile.isEmpty) {
-      return const Center(child: Text('There is no screenshot file.'));
+      return Center(
+        child: Text(
+          FlutterI18n.translate(context, 'screenshotsContent.noScreenshots'),
+        ),
+      );
     }
 
     final sortedProfiles = Map.fromEntries(
@@ -203,14 +208,22 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
                 child: Row(
                   children: [
                     Text(
-                      'プロファイルフィルター',
+                      FlutterI18n.translate(
+                        context,
+                        'screenshotsContent.profileFilter',
+                      ),
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const Spacer(),
                     if (_selectedProfileIds.length > 1)
                       TextButton.icon(
                         icon: const Icon(Icons.clear_all, size: 16),
-                        label: const Text('すべて解除'),
+                        label: Text(
+                          FlutterI18n.translate(
+                            context,
+                            'screenshotsContent.clearAll',
+                          ),
+                        ),
                         onPressed: () {
                           setState(() {
                             _selectedProfileIds = {};
@@ -223,7 +236,12 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
                       ),
                     TextButton.icon(
                       icon: const Icon(Icons.refresh, size: 16),
-                      label: const Text('更新'),
+                      label: Text(
+                        FlutterI18n.translate(
+                          context,
+                          'screenshotsContent.refresh',
+                        ),
+                      ),
                       onPressed: _loadScreenshots,
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -242,7 +260,7 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: FilterChip(
                           label: Text(
-                            '${_getProfileDisplayName(entry.key, profilesData)} (${entry.value.length}枚)',
+                            '${_getProfileDisplayName(entry.key, profilesData)} ${FlutterI18n.translate(context, 'screenshotsContent.screenshotCount', translationParams: {'count': entry.value.length.toString()})}',
                             style: TextStyle(
                               color:
                                   _selectedProfileIds.contains(entry.key)
@@ -275,7 +293,16 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
         ),
 
         if (_selectedProfileIds.isEmpty)
-          const Expanded(child: Center(child: Text('プロファイルを選択してください')))
+          Expanded(
+            child: Center(
+              child: Text(
+                FlutterI18n.translate(
+                  context,
+                  'screenshotsContent.selectProfile',
+                ),
+              ),
+            ),
+          )
         else
           Expanded(child: _buildMultiProfileScreenshotGrid()),
       ],
@@ -290,11 +317,20 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
     }
 
     if (profileId == 'latest') {
-      return 'デフォルト（最新バージョン）';
+      return FlutterI18n.translate(
+        context,
+        'screenshotsContent.defaultProfileName',
+      );
     } else if (profileId == 'latest-release') {
-      return 'デフォルト（最新リリース）';
+      return FlutterI18n.translate(
+        context,
+        'screenshotsContent.defaultReleaseProfileName',
+      );
     } else if (profileId == 'latest-snapshot') {
-      return 'デフォルト（最新スナップショット）';
+      return FlutterI18n.translate(
+        context,
+        'screenshotsContent.defaultSnapshotProfileName',
+      );
     }
 
     return profileId;
@@ -335,7 +371,12 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
               color: Colors.grey,
             ),
             const SizedBox(height: 16),
-            Text('選択したプロファイルにはスクリーンショットがありません。'),
+            Text(
+              FlutterI18n.translate(
+                context,
+                'screenshotsContent.noScreenshotsForProfile',
+              ),
+            ),
           ],
         ),
       );
@@ -364,7 +405,10 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
           final screenshots = groupedScreenshots[dateKey]!;
 
           final parts = dateKey.split('-');
-          final formattedDate = '${parts[0]}年${parts[1]}月${parts[2]}日';
+          final formattedDate =
+              '${parts[0]}${FlutterI18n.translate(context, 'screenshotsContent.year')}'
+              '${parts[1]}${FlutterI18n.translate(context, 'screenshotsContent.month')}'
+              '${parts[2]}${FlutterI18n.translate(context, 'screenshotsContent.day')}';
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,7 +488,12 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
               color: Colors.grey,
             ),
             const SizedBox(height: 16),
-            Text('$profileName にはスクリーンショットがありません。'),
+            Text(
+              FlutterI18n.translate(
+                context,
+                'screenshotsContent.noScreenshotsForProfile',
+              ),
+            ),
           ],
         ),
       );
@@ -486,7 +535,10 @@ class _ScreenshotsContentState extends ConsumerState<ScreenshotsContent> {
           final screenshots = groupedScreenshots[dateKey]!;
 
           final parts = dateKey.split('-');
-          final formattedDate = '${parts[0]}年${parts[1]}月${parts[2]}日';
+          final formattedDate =
+              '${parts[0]}${FlutterI18n.translate(context, 'screenshotsContent.year')}'
+              '${parts[1]}${FlutterI18n.translate(context, 'screenshotsContent.month')}'
+              '${parts[2]}${FlutterI18n.translate(context, 'screenshotsContent.day')}';
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,

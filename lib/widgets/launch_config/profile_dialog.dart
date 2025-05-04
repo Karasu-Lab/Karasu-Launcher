@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/models/launcher_versions_v2.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 class ProfileDialog extends StatefulWidget {
   final Profile? profile;
@@ -56,7 +57,11 @@ class _ProfileDialogState extends State<ProfileDialog> {
     final isEditing = widget.profile != null;
 
     return AlertDialog(
-      title: Text(isEditing ? 'Edit this profile' : 'Create new profile'),
+      title: Text(
+        isEditing
+            ? FlutterI18n.translate(context, 'profileDialog.editProfile')
+            : FlutterI18n.translate(context, 'profileDialog.createProfile'),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -64,9 +69,15 @@ class _ProfileDialogState extends State<ProfileDialog> {
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Profile name',
-                hintText: 'My cool profile',
+              decoration: InputDecoration(
+                labelText: FlutterI18n.translate(
+                  context,
+                  'profileDialog.profileName',
+                ),
+                hintText: FlutterI18n.translate(
+                  context,
+                  'profileDialog.profileNameHint',
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -79,26 +90,40 @@ class _ProfileDialogState extends State<ProfileDialog> {
                 Expanded(
                   child: TextField(
                     controller: gameDirController,
-                    decoration: const InputDecoration(
-                      labelText: 'Game directory (Optional)',
-                      hintText:
-                          'If this entry is empty, this value will be default.',
+                    decoration: InputDecoration(
+                      labelText: FlutterI18n.translate(
+                        context,
+                        'profileDialog.gameDirectory',
+                      ),
+                      hintText: FlutterI18n.translate(
+                        context,
+                        'profileDialog.gameDirectoryHint',
+                      ),
                     ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.folder_open),
                   onPressed: _pickFolder,
-                  tooltip: 'Select folder',
+                  tooltip: FlutterI18n.translate(
+                    context,
+                    'profileDialog.selectFolder',
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             TextField(
               controller: javaArgsController,
-              decoration: const InputDecoration(
-                labelText: 'Java arguments (Optional)',
-                hintText: '-Xmx2G -XX:+UnlockExperimentalVMOptions',
+              decoration: InputDecoration(
+                labelText: FlutterI18n.translate(
+                  context,
+                  'profileDialog.javaArguments',
+                ),
+                hintText: FlutterI18n.translate(
+                  context,
+                  'profileDialog.javaArgumentsHint',
+                ),
               ),
             ),
           ],
@@ -107,7 +132,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(FlutterI18n.translate(context, 'profileDialog.cancel')),
         ),
         TextButton(
           onPressed: () {
@@ -115,8 +140,13 @@ class _ProfileDialogState extends State<ProfileDialog> {
 
             if (name.isEmpty || selectedVersion == null) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Profile name and version are required'),
+                SnackBar(
+                  content: Text(
+                    FlutterI18n.translate(
+                      context,
+                      'profileDialog.requiredFields',
+                    ),
+                  ),
                 ),
               );
               return;
@@ -145,7 +175,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
             widget.onSave(newProfile);
             Navigator.of(context).pop();
           },
-          child: const Text('Save'),
+          child: Text(FlutterI18n.translate(context, 'profileDialog.save')),
         ),
       ],
     );
@@ -162,7 +192,10 @@ class _ProfileDialogState extends State<ProfileDialog> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Version', style: TextStyle(fontSize: 16)),
+            Text(
+              FlutterI18n.translate(context, 'profileDialog.version'),
+              style: const TextStyle(fontSize: 16),
+            ),
             const SizedBox(height: 8),
 
             Row(
@@ -175,7 +208,9 @@ class _ProfileDialogState extends State<ProfileDialog> {
                     });
                   },
                 ),
-                const Text('Show Releases'),
+                Text(
+                  FlutterI18n.translate(context, 'profileDialog.showReleases'),
+                ),
                 const SizedBox(width: 20),
                 Checkbox(
                   value: showSnapshots,
@@ -185,7 +220,9 @@ class _ProfileDialogState extends State<ProfileDialog> {
                     });
                   },
                 ),
-                const Text('Show Snapshots'),
+                Text(
+                  FlutterI18n.translate(context, 'profileDialog.showSnapshots'),
+                ),
                 const SizedBox(width: 20),
                 Checkbox(
                   value: showOldVersions,
@@ -195,7 +232,12 @@ class _ProfileDialogState extends State<ProfileDialog> {
                     });
                   },
                 ),
-                const Text('Show Old Versions'),
+                Text(
+                  FlutterI18n.translate(
+                    context,
+                    'profileDialog.showOldVersions',
+                  ),
+                ),
               ],
             ),
 
@@ -206,7 +248,12 @@ class _ProfileDialogState extends State<ProfileDialog> {
                       if (showReleases)
                         ElevatedButton.icon(
                           icon: const Icon(Icons.videogame_asset, size: 16),
-                          label: const Text('Latest Release'),
+                          label: Text(
+                            FlutterI18n.translate(
+                              context,
+                              'profileDialog.latestRelease',
+                            ),
+                          ),
                           onPressed: () {
                             setState(() {
                               selectedVersion = latest['release'];
@@ -222,7 +269,12 @@ class _ProfileDialogState extends State<ProfileDialog> {
                       if (showSnapshots)
                         ElevatedButton.icon(
                           icon: const Icon(Icons.science, size: 16),
-                          label: const Text('Latest Snapshot'),
+                          label: Text(
+                            FlutterI18n.translate(
+                              context,
+                              'profileDialog.latestSnapshot',
+                            ),
+                          ),
                           onPressed: () {
                             setState(() {
                               selectedVersion = latest['snapshot'];
@@ -264,13 +316,29 @@ class _ProfileDialogState extends State<ProfileDialog> {
                 }
 
                 return filteredVersions.isEmpty
-                    ? const Text('There are no versions available')
+                    ? Text(
+                      FlutterI18n.translate(
+                        context,
+                        'profileDialog.noVersionsAvailable',
+                      ),
+                    )
                     : selectedVersion == null
-                    ? const Text('Loading versions...')
+                    ? Text(
+                      FlutterI18n.translate(
+                        context,
+                        'profileDialog.loadingVersions',
+                      ),
+                    )
                     : _buildScrollableVersionList(filteredVersions, context);
               },
               loading: () => const LinearProgressIndicator(),
-              error: (_, __) => const Text('Failed to load versions'),
+              error:
+                  (_, __) => Text(
+                    FlutterI18n.translate(
+                      context,
+                      'profileDialog.failedToLoadVersions',
+                    ),
+                  ),
             ),
           ],
         );
@@ -283,7 +351,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
     BuildContext context,
   ) {
     return Padding(
-      padding: EdgeInsets.all(10),
+      padding: const EdgeInsets.all(10),
       child: Container(
         height: 250,
         decoration: BoxDecoration(
@@ -296,7 +364,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                'Selected: ${selectedVersion ?? "None"}',
+                '${FlutterI18n.translate(context, 'profileDialog.selected')}: ${selectedVersion ?? FlutterI18n.translate(context, 'profileDialog.none')}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),

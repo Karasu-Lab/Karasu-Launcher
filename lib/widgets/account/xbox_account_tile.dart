@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/models/auth/minecraft_profile.dart';
 import 'package:karasu_launcher/models/auth/account.dart';
 import 'package:karasu_launcher/providers/authentication_provider.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 class XboxAccountTile extends ConsumerWidget {
   final Account account;
@@ -68,7 +69,11 @@ class XboxAccountTile extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        profile?.name ?? 'Unknown User',
+                        profile?.name ??
+                            FlutterI18n.translate(
+                              context,
+                              "xboxAccount.unknown",
+                            ),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -81,7 +86,15 @@ class XboxAccountTile extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        hasValidToken ? '認証済み' : 'トークンの更新が必要',
+                        hasValidToken
+                            ? FlutterI18n.translate(
+                              context,
+                              "xboxAccount.authenticated",
+                            )
+                            : FlutterI18n.translate(
+                              context,
+                              "xboxAccount.tokenRefreshRequired",
+                            ),
                         style: TextStyle(
                           fontSize: 12,
                           color: hasValidToken ? Colors.green : Colors.red,
@@ -90,7 +103,13 @@ class XboxAccountTile extends ConsumerWidget {
                       if (account.profile?.id != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          'UUID: ${_formatUuid(account.profile!.id)}',
+                          FlutterI18n.translate(
+                            context,
+                            "xboxAccount.uuid",
+                            translationParams: {
+                              "id": _formatUuid(account.profile!.id),
+                            },
+                          ),
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey.shade600,
@@ -108,14 +127,20 @@ class XboxAccountTile extends ConsumerWidget {
                     if (onRefresh != null)
                       IconButton(
                         icon: const Icon(Icons.refresh),
-                        tooltip: 'トークン更新',
+                        tooltip: FlutterI18n.translate(
+                          context,
+                          "xboxAccount.refreshToken",
+                        ),
                         onPressed: onRefresh,
                         visualDensity: VisualDensity.compact,
                       ),
                     if (onSignOut != null)
                       IconButton(
                         icon: const Icon(Icons.logout),
-                        tooltip: 'サインアウト',
+                        tooltip: FlutterI18n.translate(
+                          context,
+                          "xboxAccount.signOut",
+                        ),
                         onPressed: onSignOut,
                         visualDensity: VisualDensity.compact,
                       ),
@@ -262,7 +287,7 @@ class XboxAccountButton extends ConsumerWidget {
     }
 
     return Tooltip(
-      message: 'Xboxアカウント',
+      message: FlutterI18n.translate(context, "xboxAccount.title"),
       child: InkWell(
         onTap: () => _showAccountsDialog(context, ref),
         borderRadius: BorderRadius.circular(16),
@@ -288,9 +313,12 @@ class XboxAccountButton extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Xboxアカウント',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    FlutterI18n.translate(context, "xboxAccount.title"),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   ...authState.accounts.entries.map((entry) {
@@ -360,7 +388,12 @@ class XboxAccountButton extends ConsumerWidget {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.add),
-                      label: const Text('新規アカウント追加'),
+                      label: Text(
+                        FlutterI18n.translate(
+                          context,
+                          "xboxAccount.addNewAccount",
+                        ),
+                      ),
                       onPressed: () {
                         Navigator.pop(context);
                         Navigator.pushNamed(context, '/accounts/add');
@@ -372,7 +405,9 @@ class XboxAccountButton extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
-                      child: const Text('閉じる'),
+                      child: Text(
+                        FlutterI18n.translate(context, "xboxAccount.close"),
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -388,17 +423,34 @@ class XboxAccountButton extends ConsumerWidget {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('サインアウトの確認'),
-            content: Text('${account.profile?.name ?? "このアカウント"}からサインアウトしますか？'),
+            title: Text(FlutterI18n.translate(context, "accountSignOut.title")),
+            content: Text(
+              FlutterI18n.translate(
+                context,
+                "accountSignOut.confirmationMessage",
+                translationParams: {
+                  "accountName":
+                      account.profile?.name ??
+                      FlutterI18n.translate(
+                        context,
+                        "accountProfile.thisAccount",
+                      ),
+                },
+              ),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('キャンセル'),
+                child: Text(
+                  FlutterI18n.translate(context, "accountSignOut.cancel"),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('サインアウト'),
+                child: Text(
+                  FlutterI18n.translate(context, "accountSignOut.signOut"),
+                ),
               ),
             ],
           ),

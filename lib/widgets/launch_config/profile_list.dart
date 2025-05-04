@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
 import 'package:karasu_launcher/widgets/launch_config/profile_card.dart';
@@ -92,7 +93,11 @@ class CustomProfileList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (profiles.isEmpty) {
-      return const Center(child: Text('フィルター条件に一致するプロファイルがありません'));
+      return Center(
+        child: Text(
+          FlutterI18n.translate(context, "profileList.noMatchingProfiles"),
+        ),
+      );
     }
 
     return Column(
@@ -108,13 +113,22 @@ class CustomProfileList extends ConsumerWidget {
                     String label;
                     switch (option) {
                       case ProfileSortOption.custom:
-                        label = '名前順';
+                        label = FlutterI18n.translate(
+                          context,
+                          "profileList.sortOptions.byName",
+                        );
                         break;
                       case ProfileSortOption.lastPlayed:
-                        label = '最終プレイ日時順';
+                        label = FlutterI18n.translate(
+                          context,
+                          "profileList.sortOptions.byLastPlayed",
+                        );
                         break;
                       case ProfileSortOption.created:
-                        label = '作成日時順';
+                        label = FlutterI18n.translate(
+                          context,
+                          "profileList.sortOptions.byCreation",
+                        );
                         break;
                     }
                     return DropdownMenuItem<ProfileSortOption>(

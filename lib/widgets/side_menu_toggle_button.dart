@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import '../providers/side_menu_provider.dart';
 
 class SideMenuToggleButton extends ConsumerWidget {
@@ -10,7 +11,10 @@ class SideMenuToggleButton extends ConsumerWidget {
     final isOpen = ref.watch(sideMenuOpenProvider);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0), // 垂直パディングを調整
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8.0,
+        vertical: 2.0,
+      ), // 垂直パディングを調整
       child: IconButton(
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
@@ -27,7 +31,10 @@ class SideMenuToggleButton extends ConsumerWidget {
         onPressed: () {
           ref.read(sideMenuOpenProvider.notifier).state = !isOpen;
         },
-        tooltip: isOpen ? 'メニューを閉じる' : 'メニューを開く',
+        tooltip:
+            isOpen
+                ? FlutterI18n.translate(context, "sideMenu.closeMenu")
+                : FlutterI18n.translate(context, "sideMenu.openMenu"),
         padding: const EdgeInsets.all(6.0),
         constraints: const BoxConstraints(minWidth: 40.0, minHeight: 40.0),
         splashColor: Colors.transparent,

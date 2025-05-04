@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:karasu_launcher/models/minecraft_state.dart';
 import '../providers/minecraft_state_provider.dart';
 import '../providers/authentication_provider.dart';
@@ -11,11 +12,16 @@ final xuidVisibilityProvider = StateProvider.family<bool, String>(
   (ref, userId) => false,
 );
 
-class TaskManagerPage extends ConsumerWidget {
+class TaskManagerPage extends ConsumerStatefulWidget {
   const TaskManagerPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TaskManagerPage> createState() => _TaskManagerPageState();
+}
+
+class _TaskManagerPageState extends ConsumerState<TaskManagerPage> {
+  @override
+  Widget build(BuildContext context) {
     final minecraftState = ref.watch(minecraftStateProvider);
     final profilesAsync = ref.watch(profilesInitializedProvider);
     final accounts = ref.watch(authenticationProvider).accounts;
@@ -28,11 +34,11 @@ class TaskManagerPage extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Text(
-              'タスクマネージャー',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              FlutterI18n.translate(context, 'taskManagerPage.title'),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ),
 
@@ -40,7 +46,7 @@ class TaskManagerPage extends ConsumerWidget {
             child: profilesAsync.when(
               data: (profiles) {
                 if (launchingUserIds.isEmpty) {
-                  return _buildAccountsList(ref, accounts);
+                  return _buildAccountsList(accounts);
                 }
 
                 return ListView.builder(
@@ -76,11 +82,9 @@ class TaskManagerPage extends ConsumerWidget {
                                   'Unknown Profile';
 
                               return _buildProfileItem(
-                                context,
                                 profileId,
                                 profileName,
                                 progress,
-                                ref,
                                 userId,
                               );
                             }),
@@ -106,12 +110,12 @@ class TaskManagerPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildAccountsList(WidgetRef ref, Map<String, Account> accounts) {
+  Widget _buildAccountsList(Map<String, Account> accounts) {
     if (accounts.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'アカウントが登録されていません',
-          style: TextStyle(fontSize: 16, color: Colors.white70),
+          FlutterI18n.translate(context, 'taskManagerPage.noAccounts'),
+          style: const TextStyle(fontSize: 16, color: Colors.white70),
         ),
       );
     }
@@ -150,8 +154,15 @@ class TaskManagerPage extends ConsumerWidget {
                 children: [
                   Text(
                     isOffline
-                        ? 'オフラインユーザー'
-                        : account?.profile?.name ?? 'Unknown User',
+                        ? FlutterI18n.translate(
+                          context,
+                          'taskManagerPage.offlineUser',
+                        )
+                        : account?.profile?.name ??
+                            FlutterI18n.translate(
+                              context,
+                              'taskManagerPage.unknownUser',
+                            ),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -162,8 +173,23 @@ class TaskManagerPage extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           isOffline
-                              ? 'ユーザーID: $userId'
-                              : 'XUID: ${isXuidVisible ? (account?.xuid ?? 'N/A') : '••••••••••••••••'}',
+                              ? FlutterI18n.translate(
+                                context,
+                                'taskManagerPage.userId',
+                                translationParams: {'id': userId},
+                              )
+                              : isXuidVisible
+                              ? FlutterI18n.translate(
+                                context,
+                                'taskManagerPage.xuid',
+                                translationParams: {
+                                  'id': account?.xuid ?? 'N/A',
+                                },
+                              )
+                              : FlutterI18n.translate(
+                                context,
+                                'taskManagerPage.xuidHidden',
+                              ),
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -197,11 +223,9 @@ class TaskManagerPage extends ConsumerWidget {
   }
 
   Widget _buildProfileItem(
-    BuildContext context,
     String profileId,
     String profileName,
     UserProgress? progress,
-    WidgetRef ref,
     String userId,
   ) {
     return Padding(

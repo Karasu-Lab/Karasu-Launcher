@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
 import 'package:karasu_launcher/providers/authentication_provider.dart';
 import 'dart:io';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:karasu_launcher/widgets/minecraft_face.dart';
 
 class LoadingPage extends ConsumerStatefulWidget {
   const LoadingPage({super.key});
@@ -14,29 +16,53 @@ class LoadingPage extends ConsumerStatefulWidget {
 
 class _LoadingPageState extends ConsumerState<LoadingPage> {
   final bool _isLoading = true;
-  String _loadingMessage = '初期化中...';
+  String _loadingMessage = '';
   String? _errorMessage;
   bool _hasError = false;
+  bool _showMinecraftFace = false;
+  String? _profileName;
+  String? _skinUrl;
+
+  final double _iconSize = 150.0;
 
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _loadingMessage = FlutterI18n.translate(
+          context,
+          'loadingPage.initializing',
+        );
+      });
+      _initializeApp();
+    });
   }
 
   Future<bool> _checkInternetConnection() async {
     try {
       setState(() {
-        _loadingMessage = 'インターネット接続を確認しています...';
+        _loadingMessage = FlutterI18n.translate(
+          context,
+          'loadingPage.checkingConnection',
+        );
       });
 
       final result = await InternetAddress.lookup('google.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException catch (e) {
-      debugPrint('インターネット接続がありません: $e');
+      if (mounted) {
+        debugPrint(
+          '${FlutterI18n.translate(context, 'loadingPage.noConnection')}: $e',
+        );
+      }
       return false;
     } catch (e) {
-      debugPrint('接続確認中にエラーが発生しました: $e');
+      if (mounted) {
+        debugPrint(
+          '${FlutterI18n.translate(context, 'loadingPage.connectionError')}: $e',
+        );
+      }
       return false;
     }
   }
@@ -44,7 +70,10 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
   Future<void> _initializeApp() async {
     try {
       setState(() {
-        _loadingMessage = 'プロファイル情報を読み込んでいます...';
+        _loadingMessage = FlutterI18n.translate(
+          context,
+          'loadingPage.loadingProfiles',
+        );
       });
 
       await ref.read(profilesInitializedProvider.future);
@@ -52,14 +81,20 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
       final hasInternet = await _checkInternetConnection();
 
       setState(() {
-        _loadingMessage = '認証状態を確認しています...';
+        _loadingMessage = FlutterI18n.translate(
+          context,
+          'loadingPage.checkingAuth',
+        );
       });
 
       final authNotifier = ref.read(authenticationProvider.notifier);
 
       if (!hasInternet) {
         setState(() {
-          _loadingMessage = 'インターネット接続がありません。オフラインモードで続行します...';
+          _loadingMessage = FlutterI18n.translate(
+            context,
+            'loadingPage.offlineMode',
+          );
         });
 
         await authNotifier.clearActiveAccount();
@@ -69,25 +104,45 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
         await authNotifier.init();
         var profile = await authNotifier.refreshActiveAccount();
 
-        setState(() {
-          _loadingMessage = '${profile?.name}としてログインしました。';
-        });
+        if (profile != null) {
+          setState(() {
+            _showMinecraftFace = true;
+            _profileName = profile.name;
+            _skinUrl = profile.skinUrl;
+            _loadingMessage = FlutterI18n.translate(
+              context,
+              'loadingPage.loggedInAs',
+              translationParams: {'name': profile.name},
+            );
+          });
+        }
 
         await Future.delayed(const Duration(seconds: 1));
       }
 
       setState(() {
-        _loadingMessage = '設定を適用しています...';
+        _loadingMessage = FlutterI18n.translate(
+          context,
+          'loadingPage.applyingSettings',
+        );
       });
 
       await Future.delayed(const Duration(milliseconds: 500));
     } catch (e) {
       setState(() {
         _hasError = true;
-        _errorMessage = 'エラーが発生しました: $e';
-        _loadingMessage = 'アプリケーションの初期化に失敗しました';
+        _errorMessage =
+            '${FlutterI18n.translate(context, 'loadingPage.errorOccurred')}: $e';
+        _loadingMessage = FlutterI18n.translate(
+          context,
+          'loadingPage.initFailed',
+        );
       });
-      debugPrint('初期化エラー: $e');
+      if (mounted) {
+        debugPrint(
+          '${FlutterI18n.translate(context, 'loadingPage.initError')}: $e',
+        );
+      }
       await Future.delayed(const Duration(seconds: 2));
     }
 
@@ -110,17 +165,32 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/images/logo.png',
-              width: 150,
-              errorBuilder:
-                  (context, error, stackTrace) =>
-                      const Icon(Icons.launch, size: 80, color: Colors.white),
-            ),
+            _showMinecraftFace && _skinUrl != null
+                ? SizedBox(
+                  width: _iconSize / 1.5,
+                  height: _iconSize / 1.5,
+                  child: MinecraftFace.network(
+                    _skinUrl!,
+                    size: _iconSize / 1.5,
+                    showOverlay: true,
+                  ),
+                )
+                : Image.asset(
+                  'assets/images/logo.png',
+                  width: _iconSize,
+                  errorBuilder:
+                      (context, error, stackTrace) => Icon(
+                        Icons.launch,
+                        size: _iconSize * 0.53,
+                        color: Colors.white,
+                      ),
+                ),
             const SizedBox(height: 24),
-            const Text(
-              'Karasu Launcher',
-              style: TextStyle(
+            Text(
+              _showMinecraftFace && _profileName != null
+                  ? _profileName!
+                  : 'Karasu Launcher',
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -139,9 +209,12 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
                 final isLoading = ref.watch(profilesLoadingProvider);
                 return Visibility(
                   visible: isLoading,
-                  child: const Text(
-                    'プロファイル情報を取得中...',
-                    style: TextStyle(fontSize: 12, color: Colors.white60),
+                  child: Text(
+                    FlutterI18n.translate(
+                      context,
+                      'loadingPage.fetchingProfiles',
+                    ),
+                    style: const TextStyle(fontSize: 12, color: Colors.white60),
                   ),
                 );
               },

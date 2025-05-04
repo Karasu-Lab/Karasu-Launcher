@@ -2,9 +2,18 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-Future<Directory> createAppDirectory() async {
+Future<Directory> getAppDirectory() async {
   try {
     final appDocDir = await getApplicationDocumentsDirectory();
+    return Directory(appDocDir.path);
+  } catch (e) {
+    throw Exception('アプリケーションディレクトリの取得に失敗しました: $e');
+  }
+}
+
+Future<Directory> createAppDirectory() async {
+  try {
+    final appDocDir = await getAppDirectory();
 
     final karasuDirPath = p.join(appDocDir.path, '.karasu_launcher');
 

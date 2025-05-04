@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/pages/home/game_content.dart';
 import 'package:karasu_launcher/pages/home/screenshots_content.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 class PlayTab extends ConsumerStatefulWidget {
   const PlayTab({super.key});
@@ -34,13 +35,13 @@ class _PlayTabState extends ConsumerState<PlayTab> {
             children: [
               _buildTabButton(
                 icon: Icons.videogame_asset,
-                label: 'ゲーム',
+                label: FlutterI18n.translate(context, 'playTab.game'),
                 isSelected: _currentView == 'game',
                 onTap: () => setState(() => _currentView = 'game'),
               ),
               _buildTabButton(
                 icon: Icons.photo_library,
-                label: 'スクリーンショット',
+                label: FlutterI18n.translate(context, 'playTab.screenshots'),
                 isSelected: _currentView == 'screenshots',
                 onTap: () => setState(() => _currentView = 'screenshots'),
               ),

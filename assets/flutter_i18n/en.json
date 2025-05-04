@@ -1,0 +1,338 @@
+{
+    "homePage": {
+        "tabs": {
+            "play": "Play",
+            "launchConfig": "Launch Configuration",
+            "patchNotes": "Official Patch Notes",
+            "log": "Log"
+        },
+        "button": {
+            "launch": "Launch {name}",
+            "selectProfile": "Please select a profile",
+            "launchInDifferentInstance": "Launch in different instance"
+        },
+        "warning": {
+            "title": "Warning",
+            "duplicateInstance": "A Minecraft instance with the same profile is already running.\nRunning multiple instances of the same profile may cause issues.\n\nDo you want to continue?",
+            "duplicateProfile": "This profile is already running.\nRunning multiple instances of the same profile may cause data corruption and other issues.\n\nDo you want to continue?"
+        },
+        "actions": {
+            "cancel": "Cancel",
+            "launch": "Launch"
+        },
+        "error": {
+            "profileNotFound": "Selected profile not found"
+        }
+    },
+    "loadingPage": {
+        "initializing": "Initializing...",
+        "checkingConnection": "Checking internet connection...",
+        "noConnection": "No internet connection",
+        "connectionError": "Error while checking connection",
+        "loadingProfiles": "Loading profile information...",
+        "checkingAuth": "Checking authentication status...",
+        "offlineMode": "No internet connection. Continuing in offline mode...",
+        "loggedInAs": "Logged in as {name}.",
+        "applyingSettings": "Applying settings...",
+        "errorOccurred": "An error occurred",
+        "initFailed": "Application initialization failed",
+        "initError": "Initialization error",
+        "fetchingProfiles": "Fetching profile information..."
+    },
+    "serverPage": {
+        "title": "Minecraft Server Management",
+        "startServer": "Start Server",
+        "serverSettings": "Server Settings"
+    },
+    "gameContent": {
+        "tabContent": "Game tab contents"
+    },
+    "launchConfigTab": {
+        "manageProfiles": "Manage Profiles",
+        "customProfile": "Custom profile",
+        "noCustomProfiles": "There is no custom profiles",
+        "deleteProfile": "Delete profile",
+        "deleteConfirmation": "Are you sure you want to delete this profile?",
+        "cancel": "Cancel",
+        "delete": "Delete"
+    },
+    "logTab": {
+        "type": "Type",
+        "info": "Information",
+        "assetFetch": "Asset Fetch",
+        "libraryFetch": "Library Fetch",
+        "error": "Error",
+        "source": "Source",
+        "javaStdOut": "Java Standard Output",
+        "javaStdErr": "Java Error Output",
+        "autoScroll": "Auto Scroll",
+        "clear": "Clear",
+        "noLogs": "No logs available",
+        "sampleLogMessage": "Sample log message"
+    },
+    "patchNotesTab": {
+        "fetchError": "Failed to fetch patch notes",
+        "retry": "Retry",
+        "noPatchNotes": "No patch notes available"
+    },
+    "profileDialog": {
+        "editProfile": "Edit this profile",
+        "createProfile": "Create new profile",
+        "profileName": "Profile name",
+        "profileNameHint": "My cool profile",
+        "gameDirectory": "Game directory (Optional)",
+        "gameDirectoryHint": "If this entry is empty, this value will be default.",
+        "javaArguments": "Java arguments (Optional)",
+        "javaArgumentsHint": "-Xmx2G -XX:+UnlockExperimentalVMOptions",
+        "selectFolder": "Select folder",
+        "cancel": "Cancel",
+        "save": "Save",
+        "requiredFields": "Profile name and version are required",
+        "version": "Version",
+        "showReleases": "Show Releases",
+        "showSnapshots": "Show Snapshots",
+        "showOldVersions": "Show Old Versions",
+        "latestRelease": "Latest Release",
+        "latestSnapshot": "Latest Snapshot",
+        "noVersionsAvailable": "There are no versions available",
+        "loadingVersions": "Loading versions...",
+        "failedToLoadVersions": "Failed to load versions",
+        "selected": "Selected",
+        "none": "None"
+    },
+    "profileCard": {
+        "version": "Version: {version}",
+        "unknownVersion": "unknown",
+        "lastPlayed": "Last played: {date}",
+        "unknown": "Unknown",
+        "editTooltip": "Edit this profile",
+        "cannotEditTooltip": "You cannot edit this profile",
+        "deleteTooltip": "Delete this profile",
+        "cannotDeleteTooltip": "You cannot delete this profile"
+    },
+    "profileFilter": {
+        "showReleases": "Show Releases",
+        "showSnapshots": "Show Snapshots",
+        "showOldVersions": "Show Old Versions"
+    },
+    "profileSortSelector": {
+        "customOrder": "Custom order",
+        "lastPlayedOrder": "Last played order",
+        "creationOrder": "Creation order"
+    },
+    "playTab": {
+        "game": "Game",
+        "screenshots": "Screenshots"
+    },
+    "screenshotsContent": {
+        "noScreenshots": "There is no screenshot file.",
+        "profileFilter": "Profile Filter",
+        "clearAll": "Clear All",
+        "refresh": "Refresh",
+        "selectProfile": "Please select a profile",
+        "screenshotCount": "{count} photos",
+        "defaultProfileName": "Default (Latest Version)",
+        "defaultReleaseProfileName": "Default (Latest Release)",
+        "defaultSnapshotProfileName": "Default (Latest Snapshot)",
+        "noScreenshotsForProfile": "There are no screenshots for the selected profile.",
+        "year": "year",
+        "month": "month",
+        "day": "day"
+    },
+    "taskManagerPage": {
+        "title": "Task Manager",
+        "noAccounts": "No accounts registered",
+        "offlineUser": "Offline User",
+        "unknownUser": "Unknown User",
+        "userId": "User ID: {id}",
+        "xuid": "XUID: {id}",
+        "xuidHidden": "XUID: ••••••••••••••••"
+    },
+    "accountHome": {
+        "title": "Account Management",
+        "addAccount": "Add New Account",
+        "minecraftAccounts": "Minecraft Accounts",
+        "onlineMode": "Online Mode",
+        "offlineMode": "Offline Mode",
+        "noAccounts": "There are no accounts",
+        "activeAccount": "Active Account",
+        "authenticated": "Authenticated",
+        "tokenExpired": "Token Expired",
+        "tokenRefreshing": "Refreshing Token...",
+        "refreshToken": "Refresh Token",
+        "profileDetails": "Profile Details",
+        "toggleToOnline": "Return to Online Mode",
+        "toggleToOffline": "Switch to Offline Mode",
+        "demoMode": "Launch Minecraft in Demo Mode"
+    },
+    "accountProfile": {
+        "title": "Account Profile",
+        "accountNotFound": "Account information not found",
+        "usernameUnknown": "Username unknown",
+        "accountInfo": "Account Information",
+        "minecraftId": "Minecraft ID",
+        "minecraftJavaEdition": "Minecraft Java Edition",
+        "hasOwnership": "Has ownership",
+        "noOwnership": "No ownership",
+        "tokenInfo": "Token Information",
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "signOut": "Sign Out",
+        "thisAccount": "this account"
+    },
+    "accountSignIn": {
+        "title": "Sign In",
+        "microsoftSignIn": "Sign in with Microsoft Account",
+        "enterCode": "Enter the following code on the authentication page:",
+        "copyCode": "Copy Code",
+        "openAuthPage": "Open Authentication Page",
+        "authenticating": "Waiting for authentication... Please complete authentication in browser",
+        "useAccount": "Sign in using your Microsoft account.",
+        "startSignIn": "Start Sign In",
+        "codeCopied": "Code copied to clipboard",
+        "authFailed": "Authentication failed: {error}",
+        "startAuthFailed": "Failed to start authentication: {error}",
+        "copyError": "Copy Error Message",
+        "errorCopied": "Error message copied"
+    },
+    "accountSignOut": {
+        "title": "Sign Out Confirmation",
+        "confirmationMessage": "Are you sure you want to sign out of {accountName}?",
+        "cancel": "Cancel",
+        "signOut": "Sign Out"
+    },
+    "xboxAccount": {
+        "unknown": "Unknown User",
+        "authenticated": "Authenticated",
+        "tokenRefreshRequired": "Token refresh required",
+        "uuid": "UUID: {id}",
+        "refreshToken": "Refresh token",
+        "signOut": "Sign out",
+        "addNewAccount": "Add new account",
+        "close": "Close",
+        "title": "Xbox Accounts"
+    },
+    "confirmationDialog": {
+        "defaultCancel": "Cancel",
+        "defaultConfirm": "Confirm"
+    },
+    "errorDialog": {
+        "defaultTitle": "Error",
+        "defaultButtonText": "Close"
+    },
+    "featureInDevelopmentDialog": {
+        "defaultTitle": "Feature in Development",
+        "defaultMessage": "The sharing feature is under development.",
+        "defaultButtonText": "Close"
+    },
+    "profileList": {
+        "noMatchingProfiles": "No profiles match your filter criteria",
+        "sortOptions": {
+            "byName": "By name",
+            "byLastPlayed": "By last played date",
+            "byCreation": "By creation date"
+        }
+    },
+    "screenshotCommentDialog": {
+        "title": "Edit Comment",
+        "hintText": "Add a comment to this screenshot",
+        "cancel": "Cancel",
+        "save": "Save",
+        "error": {
+            "title": "Error",
+            "saveFailed": "An error occurred while saving the comment: {error}",
+            "close": "Close"
+        }
+    },
+    "screenshotDetailScreen": {
+        "copyToClipboard": "Copy to clipboard",
+        "copied": "Image copied to clipboard",
+        "copyFailed": "Failed to copy to clipboard: {error}",
+        "share": "Share",
+        "delete": "Delete",
+        "comment": "Comment",
+        "editComment": "Edit comment",
+        "deleteComment": "Delete comment",
+        "noComment": "No comment. Tap to edit.",
+        "tapToEdit": "Tap to edit comment",
+        "deleteConfirm": {
+            "title": "Delete confirm",
+            "message": "Are you sure you want to delete this screenshot?",
+            "cancel": "Cancel",
+            "confirm": "Delete"
+        },
+        "error": {
+            "deleteFailed": "An error occurred while deleting the file: {error}"
+        }
+    },
+    "screenshotRegisterDialog": {
+        "title": "Add Comment",
+        "message": "This screenshot is not yet registered in the collection. Adding a comment will automatically register it in the collection.",
+        "cancel": "Cancel",
+        "continue": "Continue"
+    },
+    "sideMenu": {
+        "taskManager": "Task Manager",
+        "accounts": "Accounts",
+        "settings": "Settings",
+        "openMenu": "Open menu",
+        "closeMenu": "Close menu"
+    },
+    "settingsPage": {
+        "title": "Settings",
+        "general": "General",
+        "language": "Language Settings",
+        "dataManagement": "Data Management",
+        "others": "Others",
+        "appDirectory": {
+            "title": "Application Data Directory",
+            "copied": "Path copied to clipboard",
+            "copyTooltip": "Copy Path"
+        },
+        "restartApp": {
+            "title": "Restart Application",
+            "subtitle": "Restart the application to apply changes",
+            "message": "The application will restart to apply the changes. Do you want to continue?",
+            "success": "Application restarted",
+            "error": "An error occurred: {error}"
+        },
+        "clearAccount": {
+            "title": "Clear Account Information",
+            "subtitle": "Delete all stored account information",
+            "confirmTitle": "Clear Account Information",
+            "confirmMessage": "All account information will be deleted. This action cannot be undone. Do you want to continue?",
+            "success": "Account information cleared",
+            "error": "An error occurred: {error}"
+        },
+        "clearCache": {
+            "title": "Clear Cache",
+            "subtitle": "Delete temporary cache data",
+            "confirmTitle": "Clear Cache",
+            "confirmMessage": "Cache data will be deleted. Run this if the app is running slowly.",
+            "success": "Cache cleared",
+            "error": "An error occurred: {error}"
+        },
+        "clearAllData": {
+            "title": "Clear All Data",
+            "subtitle": "Delete all app data and reset to initial state",
+            "confirmTitle": "Clear All Data",
+            "confirmMessage": "All app data will be deleted and reset to the initial state. (World folders and screenshots will remain.) This action cannot be undone. Are you sure you want to continue?",
+            "success": "All data cleared",
+            "error": "An error occurred: {error}",
+            "reloadMessage": "The app will automatically restart because files have been deleted."
+        },
+        "buttons": {
+            "cancel": "Cancel",
+            "delete": "Delete",
+            "ok": "OK"
+        },
+        "languageConfirm": {
+            "title": "Change Language",
+            "message": "Changing the language will cause the app to reload. Do you want to continue?",
+            "confirmButton": "OK"
+        },
+        "errors": {
+            "filesInUse": "Some files ({count} files) could not be deleted because they are in use. Try closing other applications and then retry."
+        }
+    }
+}

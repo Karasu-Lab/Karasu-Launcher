@@ -146,7 +146,7 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
     state = state.copyWith(
       isLaunching: false,
       progressValue: 0.0,
-      progressText: 'プレイ',
+      progressText: 'Play',
     );
   }
 
@@ -180,7 +180,7 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
   }) {
     final prefix =
         level == LogLevel.error || level == LogLevel.warning ? '[Java] ' : '';
-    final userPrefix = userId != null ? '[ユーザー: $userId] ' : '';
+    final userPrefix = userId != null ? '[User: $userId] ' : '';
 
     final log = LogMessage(
       message: userPrefix + prefix + message,
@@ -195,11 +195,21 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
   }
 
   void onAssetsProgress(double progress, int current, int total) {
-    updateProgress(progress, 'アセット取得中: ${(progress * 100).toInt()}%');
-    addLog(
-      'アセット取得中: $current/$total (${(progress * 100).toInt()}%)',
-      level: LogLevel.info,
+    // 常にUIの進捗は更新する
+    updateProgress(
+      progress,
+      'Downloading assets: ${(progress * 100).toInt()}%',
     );
+
+    // 10%単位でのみログを出力する
+    if (current == 1 ||
+        current == total ||
+        (progress * 10).toInt() != ((progress - (1.0 / total)) * 10).toInt()) {
+      addLog(
+        'Downloading assets: $current/$total (${(progress * 100).toInt()}%)',
+        level: LogLevel.info,
+      );
+    }
   }
 
   void onUserAssetsProgress(
@@ -208,21 +218,31 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
     int current,
     int total,
   ) {
+    // 常にUIの進捗は更新する
     updateUserProgress(
       userId,
       progress,
-      'アセット取得中: ${(progress * 100).toInt()}%',
+      'Downloading assets: ${(progress * 100).toInt()}%',
     );
-    addLog(
-      '[ユーザー: $userId] アセット取得中: $current/$total (${(progress * 100).toInt()}%)',
-      level: LogLevel.debug,
-    );
+
+    // 10%単位でのみログを出力する
+    if (current == 1 ||
+        current == total ||
+        (progress * 10).toInt() != ((progress - (1.0 / total)) * 10).toInt()) {
+      addLog(
+        '[User: $userId] Downloading assets: $current/$total (${(progress * 100).toInt()}%)',
+        level: LogLevel.debug,
+      );
+    }
   }
 
   void onLibrariesProgress(double progress, int current, int total) {
-    updateProgress(progress, 'ライブラリ取得中: ${(progress * 100).toInt()}%');
+    updateProgress(
+      progress,
+      'Downloading libraries: ${(progress * 100).toInt()}%',
+    );
     addLog(
-      'ライブラリ取得中: $current/$total (${(progress * 100).toInt()}%)',
+      'Downloading libraries: $current/$total (${(progress * 100).toInt()}%)',
       level: LogLevel.info,
     );
   }
@@ -236,28 +256,34 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
     updateUserProgress(
       userId,
       progress,
-      'ライブラリ取得中: ${(progress * 100).toInt()}%',
+      'Downloading libraries: ${(progress * 100).toInt()}%',
     );
     addLog(
-      '[ユーザー: $userId] ライブラリ取得中: $current/$total (${(progress * 100).toInt()}%)',
+      '[User: $userId] Downloading libraries: $current/$total (${(progress * 100).toInt()}%)',
       level: LogLevel.warning,
     );
   }
 
   void onPrepareComplete() {
-    updateProgress(1.0, '起動中...');
-    addLog('Minecraft起動準備完了', level: LogLevel.info);
+    updateProgress(1.0, 'Launching...');
+    addLog('Minecraft preparation complete', level: LogLevel.info);
   }
 
   void onUserPrepareComplete(String userId) {
-    updateUserProgress(userId, 1.0, '起動中...');
-    addLog('[ユーザー: $userId] Minecraft起動準備完了', level: LogLevel.info);
+    updateUserProgress(userId, 1.0, 'Launching...');
+    addLog(
+      '[User: $userId] Minecraft preparation complete',
+      level: LogLevel.info,
+    );
   }
 
   void onNativesProgress(double progress, int current, int total) {
-    updateProgress(progress, 'ネイティブライブラリ取得中: ${(progress * 100).toInt()}%');
+    updateProgress(
+      progress,
+      'Extracting native libraries: ${(progress * 100).toInt()}%',
+    );
     addLog(
-      'ネイティブライブラリ取得中: $current/$total (${(progress * 100).toInt()}%)',
+      'Extracting native libraries: $current/$total (${(progress * 100).toInt()}%)',
       level: LogLevel.info,
     );
   }
@@ -271,10 +297,10 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
     updateUserProgress(
       userId,
       progress,
-      'ネイティブライブラリ取得中: ${(progress * 100).toInt()}%',
+      'Extracting native libraries: ${(progress * 100).toInt()}%',
     );
     addLog(
-      '[ユーザー: $userId] ネイティブライブラリ取得中: $current/$total (${(progress * 100).toInt()}%)',
+      '[User: $userId] Extracting native libraries: $current/$total (${(progress * 100).toInt()}%)',
       level: LogLevel.info,
     );
   }
@@ -287,8 +313,8 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
     resetProgress();
     final exitMessage =
         normal
-            ? 'Minecraftが正常に終了しました (終了コード: $exitCode)'
-            : 'Minecraftが異常終了しました (終了コード: $exitCode)';
+            ? 'Minecraft exited normally (exit code: $exitCode)'
+            : 'Minecraft exited abnormally (exit code: $exitCode)';
     addLog(exitMessage, level: normal ? LogLevel.info : LogLevel.error);
   }
 
@@ -307,13 +333,13 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
     resetUserProgress(userId);
     final exitMessage =
         normal
-            ? '[ユーザー: $userId] Minecraftが正常に終了しました (終了コード: $exitCode)'
-            : '[ユーザー: $userId] Minecraftが異常終了しました (終了コード: $exitCode)';
+            ? '[User: $userId] Minecraft exited normally (exit code: $exitCode)'
+            : '[User: $userId] Minecraft exited abnormally (exit code: $exitCode)';
     addLog(exitMessage, level: normal ? LogLevel.info : LogLevel.error);
   }
 
   void onMinecraftLaunch() {
-    addLog('Minecraftが起動しました', level: LogLevel.info);
+    addLog('Minecraft has been launched', level: LogLevel.info);
     resetProgress();
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:karasu_launcher/widgets/custom_drop_down.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 enum ProfileSortOption { custom, lastPlayed, created }
 
@@ -29,17 +30,20 @@ class ProfileFilter extends StatelessWidget {
         _buildCheckbox(
           value: showReleases,
           onChanged: onReleasesChanged,
-          label: 'Show Releases',
+          label: FlutterI18n.translate(context, 'profileFilter.showReleases'),
         ),
         _buildCheckbox(
           value: showSnapshots,
           onChanged: onSnapshotsChanged,
-          label: 'Show Snapshots',
+          label: FlutterI18n.translate(context, 'profileFilter.showSnapshots'),
         ),
         _buildCheckbox(
           value: showOldVersions,
           onChanged: onOldVersionsChanged,
-          label: 'Show Old Versions',
+          label: FlutterI18n.translate(
+            context,
+            'profileFilter.showOldVersions',
+          ),
         ),
       ],
     );
@@ -77,18 +81,27 @@ class ProfileSortSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomDropdown<ProfileSortOption>(
       value: sortOption,
-      items: const [
+      items: [
         DropdownMenuItem(
           value: ProfileSortOption.custom,
-          child: Text('カスタム順'),
+          child: Text(
+            FlutterI18n.translate(context, 'profileSortSelector.customOrder'),
+          ),
         ),
         DropdownMenuItem(
           value: ProfileSortOption.lastPlayed,
-          child: Text('最終プレイ順'),
+          child: Text(
+            FlutterI18n.translate(
+              context,
+              'profileSortSelector.lastPlayedOrder',
+            ),
+          ),
         ),
         DropdownMenuItem(
           value: ProfileSortOption.created,
-          child: Text('作成順'),
+          child: Text(
+            FlutterI18n.translate(context, 'profileSortSelector.creationOrder'),
+          ),
         ),
       ],
       onChanged: onSortChanged,

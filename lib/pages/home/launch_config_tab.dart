@@ -6,6 +6,7 @@ import 'package:karasu_launcher/widgets/launch_config/profile_dialog.dart';
 import 'package:karasu_launcher/widgets/launch_config/profile_filter.dart';
 import 'package:karasu_launcher/widgets/launch_config/profile_list.dart';
 import 'package:karasu_launcher/widgets/launch_config/profile_utils.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 class LaunchConfigTab extends ConsumerStatefulWidget {
   const LaunchConfigTab({super.key});
@@ -96,7 +97,10 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Manage Profiles',
+                  FlutterI18n.translate(
+                    context,
+                    'launchConfigTab.manageProfiles',
+                  ),
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
@@ -116,7 +120,10 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
 
                         // カスタムプロファイルのヘッダー
                         Text(
-                          'Custom profile',
+                          FlutterI18n.translate(
+                            context,
+                            'launchConfigTab.customProfile',
+                          ),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
@@ -124,8 +131,13 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
 
                         // カスタムプロファイルのリスト
                         customProfiles.isEmpty
-                            ? const Center(
-                              child: Text('There is no custom profiles'),
+                            ? Center(
+                              child: Text(
+                                FlutterI18n.translate(
+                                  context,
+                                  'launchConfigTab.noCustomProfiles',
+                                ),
+                              ),
                             )
                             : CustomProfileList(
                               profiles: filteredCustomProfiles,
@@ -251,12 +263,21 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Delete profile'),
-            content: const Text('Are you sure you want to delete this profile?'),
+            title: Text(
+              FlutterI18n.translate(context, 'launchConfigTab.deleteProfile'),
+            ),
+            content: Text(
+              FlutterI18n.translate(
+                context,
+                'launchConfigTab.deleteConfirmation',
+              ),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
+                child: Text(
+                  FlutterI18n.translate(context, 'launchConfigTab.cancel'),
+                ),
               ),
               TextButton(
                 onPressed: () {
@@ -267,9 +288,9 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
                     ref.read(selectedProfileProvider.notifier).state = null;
                   }
                 },
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red),
+                child: Text(
+                  FlutterI18n.translate(context, 'launchConfigTab.delete'),
+                  style: const TextStyle(color: Colors.red),
                 ),
               ),
             ],

@@ -1,0 +1,338 @@
+{
+    "homePage": {
+        "tabs": {
+            "play": "プレイ",
+            "launchConfig": "起動構成",
+            "patchNotes": "公式パッチノート",
+            "log": "ログ"
+        },
+        "button": {
+            "launch": "Launch {name}",
+            "selectProfile": "プロファイルを選択してください",
+            "launchInDifferentInstance": "別インスタンスで起動"
+        },
+        "warning": {
+            "title": "警告",
+            "duplicateInstance": "同じプロファイルのMinecraftインスタンスが既に起動中です。\n同じプロファイルを複数起動すると問題が発生する可能性があります。\n\n続行しますか？",
+            "duplicateProfile": "同じプロファイルがすでに起動しています。\n同じプロファイルを複数起動すると、セーブデータの破損など問題が発生する可能性があります。\n\n続行しますか？"
+        },
+        "actions": {
+            "cancel": "キャンセル",
+            "launch": "起動する"
+        },
+        "error": {
+            "profileNotFound": "選択されたプロファイルが見つかりません"
+        }
+    },
+    "loadingPage": {
+        "initializing": "初期化中...",
+        "checkingConnection": "インターネット接続を確認しています...",
+        "noConnection": "インターネット接続がありません",
+        "connectionError": "接続確認中にエラーが発生しました",
+        "loadingProfiles": "プロファイル情報を読み込んでいます...",
+        "checkingAuth": "認証状態を確認しています...",
+        "offlineMode": "インターネット接続がありません。オフラインモードで続行します...",
+        "loggedInAs": "{name}としてログインしました。",
+        "applyingSettings": "設定を適用しています...",
+        "errorOccurred": "エラーが発生しました",
+        "initFailed": "アプリケーションの初期化に失敗しました",
+        "initError": "初期化エラー",
+        "fetchingProfiles": "プロファイル情報を取得中..."
+    },
+    "serverPage": {
+        "title": "Minecraft サーバー管理",
+        "startServer": "サーバーを起動",
+        "serverSettings": "サーバー設定"
+    },
+    "gameContent": {
+        "tabContent": "ゲームタブの内容"
+    },
+    "launchConfigTab": {
+        "manageProfiles": "プロファイル管理",
+        "customProfile": "カスタムプロファイル",
+        "noCustomProfiles": "カスタムプロファイルがありません",
+        "deleteProfile": "プロファイルを削除",
+        "deleteConfirmation": "このプロファイルを削除してもよろしいですか？",
+        "cancel": "キャンセル",
+        "delete": "削除"
+    },
+    "logTab": {
+        "type": "種類",
+        "info": "情報",
+        "assetFetch": "アセット取得",
+        "libraryFetch": "ライブラリ取得",
+        "error": "エラー",
+        "source": "ソース",
+        "javaStdOut": "Java 標準出力",
+        "javaStdErr": "Java エラー出力",
+        "autoScroll": "自動スクロール",
+        "clear": "クリア",
+        "noLogs": "ログはありません",
+        "sampleLogMessage": "サンプルログメッセージ"
+    },
+    "patchNotesTab": {
+        "fetchError": "パッチノートの取得に失敗しました",
+        "retry": "再試行",
+        "noPatchNotes": "パッチノートがありません"
+    },
+    "profileDialog": {
+        "editProfile": "このプロファイルを編集",
+        "createProfile": "新しいプロファイルを作成",
+        "profileName": "プロファイル名",
+        "profileNameHint": "私のクールなプロファイル",
+        "gameDirectory": "ゲームディレクトリ（任意）",
+        "gameDirectoryHint": "この項目が空の場合、デフォルト値が使用されます。",
+        "javaArguments": "Java引数（任意）",
+        "javaArgumentsHint": "-Xmx2G -XX:+UnlockExperimentalVMOptions",
+        "selectFolder": "フォルダを選択",
+        "cancel": "キャンセル",
+        "save": "保存",
+        "requiredFields": "プロファイル名とバージョンは必須です",
+        "version": "バージョン",
+        "showReleases": "リリースを表示",
+        "showSnapshots": "スナップショットを表示",
+        "showOldVersions": "古いバージョンを表示",
+        "latestRelease": "最新リリース",
+        "latestSnapshot": "最新スナップショット",
+        "noVersionsAvailable": "利用可能なバージョンがありません",
+        "loadingVersions": "バージョンを読み込み中...",
+        "failedToLoadVersions": "バージョンの読み込みに失敗しました",
+        "selected": "選択中",
+        "none": "なし"
+    },
+    "profileCard": {
+        "version": "バージョン: {version}",
+        "unknownVersion": "不明",
+        "lastPlayed": "最終プレイ: {date}",
+        "unknown": "不明",
+        "editTooltip": "このプロファイルを編集",
+        "cannotEditTooltip": "このプロファイルは編集できません",
+        "deleteTooltip": "このプロファイルを削除",
+        "cannotDeleteTooltip": "このプロファイルは削除できません"
+    },
+    "profileFilter": {
+        "showReleases": "リリースを表示",
+        "showSnapshots": "スナップショットを表示",
+        "showOldVersions": "古いバージョンを表示"
+    },
+    "profileSortSelector": {
+        "customOrder": "カスタム順",
+        "lastPlayedOrder": "最終プレイ順",
+        "creationOrder": "作成順"
+    },
+    "playTab": {
+        "game": "ゲーム",
+        "screenshots": "スクリーンショット"
+    },
+    "screenshotsContent": {
+        "noScreenshots": "スクリーンショットファイルがありません。",
+        "profileFilter": "プロファイルフィルター",
+        "clearAll": "すべて解除",
+        "refresh": "更新",
+        "selectProfile": "プロファイルを選択してください",
+        "screenshotCount": "{count}枚",
+        "defaultProfileName": "デフォルト（最新バージョン）",
+        "defaultReleaseProfileName": "デフォルト（最新リリース）",
+        "defaultSnapshotProfileName": "デフォルト（最新スナップショット）",
+        "noScreenshotsForProfile": "選択したプロファイルにはスクリーンショットがありません。",
+        "year": "年",
+        "month": "月",
+        "day": "日"
+    },
+    "taskManagerPage": {
+        "title": "タスクマネージャー",
+        "noAccounts": "アカウントが登録されていません",
+        "offlineUser": "オフラインユーザー",
+        "unknownUser": "不明なユーザー",
+        "userId": "ユーザーID: {id}",
+        "xuid": "XUID: {id}",
+        "xuidHidden": "XUID: ••••••••••••••••"
+    },
+    "accountHome": {
+        "title": "アカウント管理",
+        "addAccount": "新規アカウントを追加",
+        "minecraftAccounts": "Minecraftアカウント",
+        "onlineMode": "オンラインモード",
+        "offlineMode": "オフラインモード",
+        "noAccounts": "アカウントがありません",
+        "activeAccount": "アクティブなアカウント",
+        "authenticated": "認証済み",
+        "tokenExpired": "トークン期限切れ",
+        "tokenRefreshing": "トークンを更新中...",
+        "refreshToken": "トークンを更新",
+        "profileDetails": "プロファイル詳細",
+        "toggleToOnline": "オンラインモードに戻る",
+        "toggleToOffline": "オフラインモードに切り替え",
+        "demoMode": "Minecraftのデモ版を起動します"
+    },
+    "accountProfile": {
+        "title": "アカウントプロフィール",
+        "accountNotFound": "アカウント情報が見つかりません",
+        "usernameUnknown": "ユーザー名不明",
+        "accountInfo": "アカウント情報",
+        "minecraftId": "Minecraft ID",
+        "minecraftJavaEdition": "Minecraft Java Edition",
+        "hasOwnership": "所有権あり",
+        "noOwnership": "所有権なし",
+        "tokenInfo": "トークン情報",
+        "valid": "有効",
+        "invalid": "無効",
+        "signOut": "サインアウト",
+        "thisAccount": "このアカウント"
+    },
+    "accountSignIn": {
+        "title": "サインイン",
+        "microsoftSignIn": "Microsoftアカウントでサインイン",
+        "enterCode": "以下のコードを認証ページで入力してください:",
+        "copyCode": "コードをコピー",
+        "openAuthPage": "認証ページを開く",
+        "authenticating": "認証待ち中...ブラウザで認証を完了してください",
+        "useAccount": "Microsoftアカウントを使用してサインインします。",
+        "startSignIn": "サインインを開始",
+        "codeCopied": "コードがクリップボードにコピーされました",
+        "authFailed": "認証に失敗しました: {error}",
+        "startAuthFailed": "認証の開始に失敗しました: {error}",
+        "copyError": "エラーメッセージをコピー",
+        "errorCopied": "エラーメッセージをコピーしました"
+    },
+    "accountSignOut": {
+        "title": "サインアウトの確認",
+        "confirmationMessage": "{accountName}をサインアウトしますか？",
+        "cancel": "キャンセル",
+        "signOut": "サインアウト"
+    },
+    "xboxAccount": {
+        "unknown": "不明なユーザー",
+        "authenticated": "認証済み",
+        "tokenRefreshRequired": "トークンの更新が必要",
+        "uuid": "UUID: {id}",
+        "refreshToken": "トークン更新",
+        "signOut": "サインアウト",
+        "addNewAccount": "新規アカウント追加",
+        "close": "閉じる",
+        "title": "Xboxアカウント"
+    },
+    "profileList": {
+        "noMatchingProfiles": "フィルター条件に一致するプロファイルがありません",
+        "sortOptions": {
+            "byName": "名前順",
+            "byLastPlayed": "最終プレイ日時順",
+            "byCreation": "作成日時順"
+        }
+    },
+    "confirmationDialog": {
+        "defaultCancel": "キャンセル",
+        "defaultConfirm": "確認"
+    },
+    "errorDialog": {
+        "defaultTitle": "エラー",
+        "defaultButtonText": "閉じる"
+    },
+    "featureInDevelopmentDialog": {
+        "defaultTitle": "機能開発中",
+        "defaultMessage": "共有機能は開発中です。",
+        "defaultButtonText": "閉じる"
+    },
+    "screenshotCommentDialog": {
+        "title": "コメントを編集",
+        "hintText": "スクリーンショットにコメントを追加",
+        "cancel": "キャンセル",
+        "save": "保存",
+        "error": {
+            "title": "エラー",
+            "saveFailed": "コメントの保存中にエラーが発生しました: {error}",
+            "close": "閉じる"
+        }
+    },
+    "screenshotDetailScreen": {
+        "copyToClipboard": "クリップボードにコピー",
+        "copied": "画像をクリップボードにコピーしました",
+        "copyFailed": "クリップボードへのコピーに失敗しました: {error}",
+        "share": "共有",
+        "delete": "削除",
+        "comment": "コメント",
+        "editComment": "コメントを編集",
+        "deleteComment": "コメントを削除",
+        "noComment": "コメントはありません。タップして編集できます。",
+        "tapToEdit": "タップでコメントを編集",
+        "deleteConfirm": {
+            "title": "削除の確認",
+            "message": "このスクリーンショットを削除してもよろしいですか？",
+            "cancel": "キャンセル",
+            "confirm": "削除"
+        },
+        "error": {
+            "deleteFailed": "ファイル削除中にエラーが発生しました: {error}"
+        }
+    },
+    "screenshotRegisterDialog": {
+        "title": "コメントの追加",
+        "message": "このスクリーンショットはまだコレクションに登録されていません。コメントを追加すると自動的にコレクションに登録されます。",
+        "cancel": "キャンセル",
+        "continue": "続ける"
+    },
+    "sideMenu": {
+        "taskManager": "タスクマネージャー",
+        "accounts": "アカウント",
+        "settings": "設定",
+        "openMenu": "メニューを開く",
+        "closeMenu": "メニューを閉じる"
+    },
+    "settingsPage": {
+        "title": "設定",
+        "general": "一般",
+        "language": "言語設定",
+        "dataManagement": "データ管理",
+        "others": "その他",
+        "appDirectory": {
+            "title": "アプリケーションデータの保存先",
+            "copied": "パスをクリップボードにコピーしました",
+            "copyTooltip": "パスをコピー"
+        },
+        "restartApp": {
+            "title": "アプリケーションを再起動",
+            "subtitle": "変更を適用するためにアプリケーションを再起動します",
+            "message": "変更を適用するためにアプリケーションを再起動します。続行しますか？",
+            "success": "アプリケーションが再起動されました",
+            "error": "エラーが発生しました: {error}"
+        },
+        "clearAccount": {
+            "title": "アカウント情報を削除",
+            "subtitle": "保存されているアカウント情報を削除します",
+            "confirmTitle": "アカウント情報の削除",
+            "confirmMessage": "すべてのアカウント情報が削除されます。この操作は元に戻せません。続行しますか？",
+            "success": "アカウント情報を削除しました",
+            "error": "エラーが発生しました: {error}"
+        },
+        "clearCache": {
+            "title": "キャッシュを削除",
+            "subtitle": "一時的なキャッシュデータを削除します",
+            "confirmTitle": "キャッシュの削除",
+            "confirmMessage": "キャッシュデータを削除します。アプリの動作が遅い場合に実行してください。",
+            "success": "キャッシュを削除しました",
+            "error": "エラーが発生しました: {error}"
+        },
+        "clearAllData": {
+            "title": "すべてのデータを削除",
+            "subtitle": "アプリのすべてのデータを削除し初期状態に戻します",
+            "confirmTitle": "すべてのデータの削除",
+            "confirmMessage": "アプリのすべてのデータが削除され、初期状態に戻ります。(ワールドのフォルダとスクリーンショットは残ります)この操作は元に戻せません。本当に続行しますか？",
+            "success": "すべてのデータを削除しました",
+            "error": "エラーが発生しました: {error}",
+            "reloadMessage": "ファイルを削除したため、アプリは自動的に再起動します。"
+        },
+        "buttons": {
+            "cancel": "キャンセル",
+            "delete": "削除",
+            "ok": "OK"
+        },
+        "languageConfirm": {
+            "title": "言語変更",
+            "message": "言語を変更するとアプリが再読み込みされます。続行しますか？",
+            "confirmButton": "OK"
+        },
+        "errors": {
+            "filesInUse": "一部のファイル（{count}個）は使用中のため削除できません。他のアプリケーションを閉じてから再試行してください。"
+        }
+    }
+}

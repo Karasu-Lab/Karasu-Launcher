@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import '../../providers/authentication_provider.dart';
 import '../../models/auth/device_code_response.dart';
 
@@ -49,13 +50,21 @@ class _AccountSignInPageState extends ConsumerState<AccountSignInPage> {
           .catchError((error) {
             setState(() {
               _isAuthenticating = false;
-              _errorMessage = '認証に失敗しました: ${error.toString()}';
+              _errorMessage = FlutterI18n.translate(
+                context,
+                'accountSignIn.authFailed',
+                translationParams: {"error": error.toString()},
+              );
             });
           });
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = '認証の開始に失敗しました: ${e.toString()}';
+        _errorMessage = FlutterI18n.translate(
+          context,
+          'accountSignIn.startAuthFailed',
+          translationParams: {"error": e.toString()},
+        );
       });
     }
   }
@@ -71,9 +80,13 @@ class _AccountSignInPageState extends ConsumerState<AccountSignInPage> {
     if (_userCode != null) {
       await Clipboard.setData(ClipboardData(text: _userCode!));
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('コードがクリップボードにコピーされました')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              FlutterI18n.translate(context, 'accountSignIn.codeCopied'),
+            ),
+          ),
+        );
       }
     }
   }
@@ -82,7 +95,7 @@ class _AccountSignInPageState extends ConsumerState<AccountSignInPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('サインイン'),
+        title: Text(FlutterI18n.translate(context, 'accountSignIn.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -92,9 +105,9 @@ class _AccountSignInPageState extends ConsumerState<AccountSignInPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'Microsoftアカウントでサインイン',
-                style: TextStyle(fontSize: 24),
+              Text(
+                FlutterI18n.translate(context, 'accountSignIn.microsoftSignIn'),
+                style: const TextStyle(fontSize: 24),
               ),
               const SizedBox(height: 20),
 
@@ -103,8 +116,8 @@ class _AccountSignInPageState extends ConsumerState<AccountSignInPage> {
               else if (_userCode != null && _verificationUrl != null)
                 Column(
                   children: [
-                    const Text(
-                      '以下のコードを認証ページで入力してください:',
+                    Text(
+                      FlutterI18n.translate(context, 'accountSignIn.enterCode'),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -130,7 +143,10 @@ class _AccountSignInPageState extends ConsumerState<AccountSignInPage> {
                           IconButton(
                             icon: const Icon(Icons.copy),
                             onPressed: _copyCodeToClipboard,
-                            tooltip: 'コードをコピー',
+                            tooltip: FlutterI18n.translate(
+                              context,
+                              'accountSignIn.copyCode',
+                            ),
                           ),
                         ],
                       ),
@@ -138,17 +154,27 @@ class _AccountSignInPageState extends ConsumerState<AccountSignInPage> {
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       icon: const Icon(Icons.open_in_browser),
-                      label: const Text('認証ページを開く'),
+                      label: Text(
+                        FlutterI18n.translate(
+                          context,
+                          'accountSignIn.openAuthPage',
+                        ),
+                      ),
                       onPressed:
                           () => _launchVerificationUrl(_verificationUrl!),
                     ),
                     const SizedBox(height: 16),
                     if (_isAuthenticating)
                       Column(
-                        children: const [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 8),
-                          Text('認証待ち中...ブラウザで認証を完了してください'),
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 8),
+                          Text(
+                            FlutterI18n.translate(
+                              context,
+                              'accountSignIn.authenticating',
+                            ),
+                          ),
                         ],
                       ),
                   ],
@@ -156,14 +182,22 @@ class _AccountSignInPageState extends ConsumerState<AccountSignInPage> {
               else
                 Column(
                   children: [
-                    const Text(
-                      'Microsoftアカウントを使用してサインインします。',
+                    Text(
+                      FlutterI18n.translate(
+                        context,
+                        'accountSignIn.useAccount',
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _startAuthentication,
-                      child: const Text('サインインを開始'),
+                      child: Text(
+                        FlutterI18n.translate(
+                          context,
+                          'accountSignIn.startSignIn',
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -182,11 +216,20 @@ class _AccountSignInPageState extends ConsumerState<AccountSignInPage> {
               if (_errorMessage != null)
                 TextButton.icon(
                   icon: const Icon(Icons.copy),
-                  label: const Text('エラーメッセージをコピー'),
+                  label: Text(
+                    FlutterI18n.translate(context, 'accountSignIn.copyError'),
+                  ),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: _errorMessage!));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('エラーメッセージをコピーしました')),
+                      SnackBar(
+                        content: Text(
+                          FlutterI18n.translate(
+                            context,
+                            'accountSignIn.errorCopied',
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),

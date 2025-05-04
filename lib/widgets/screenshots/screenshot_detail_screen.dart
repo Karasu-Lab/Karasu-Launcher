@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:image_clipboard/image_clipboard.dart';
 import 'package:karasu_launcher/models/screenshot.dart';
 import 'package:karasu_launcher/providers/screenshots_provider.dart';
@@ -84,15 +85,24 @@ class _ScreenshotDetailScreenState
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('画像をクリップボードにコピーしました'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(
+              FlutterI18n.translate(context, "screenshotDetailScreen.copied"),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        await ErrorDialog.show(context, message: 'クリップボードへのコピーに失敗しました: $e');
+        await ErrorDialog.show(
+          context,
+          message: FlutterI18n.translate(
+            context,
+            "screenshotDetailScreen.copyFailed",
+            translationParams: {"error": e.toString()},
+          ),
+        );
       }
     }
   }
@@ -117,7 +127,10 @@ class _ScreenshotDetailScreenState
         actions: [
           IconButton(
             icon: const Icon(Icons.copy),
-            tooltip: 'クリップボードにコピー',
+            tooltip: FlutterI18n.translate(
+              context,
+              "screenshotDetailScreen.copyToClipboard",
+            ),
             onPressed: _copyImageToClipboard,
           ),
           IconButton(
@@ -179,11 +192,20 @@ class _ScreenshotDetailScreenState
           children: [
             Row(
               children: [
-                Text('コメント', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  FlutterI18n.translate(
+                    context,
+                    "screenshotDetailScreen.comment",
+                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const Spacer(),
                 PopupMenuButton(
                   icon: const Icon(Icons.more_vert),
-                  tooltip: 'コメントを編集',
+                  tooltip: FlutterI18n.translate(
+                    context,
+                    "screenshotDetailScreen.editComment",
+                  ),
                   onSelected: (value) {
                     if (value == 'edit') {
                       ScreenshotCommentDialog.show(
@@ -214,23 +236,33 @@ class _ScreenshotDetailScreenState
                   },
                   itemBuilder:
                       (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'edit',
                           child: Row(
                             children: [
-                              Icon(Icons.edit),
-                              SizedBox(width: 12),
-                              Text('コメントを編集'),
+                              const Icon(Icons.edit),
+                              const SizedBox(width: 12),
+                              Text(
+                                FlutterI18n.translate(
+                                  context,
+                                  "screenshotDetailScreen.editComment",
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
                           child: Row(
                             children: [
-                              Icon(Icons.delete_outline),
-                              SizedBox(width: 12),
-                              Text('コメントを削除'),
+                              const Icon(Icons.delete_outline),
+                              const SizedBox(width: 12),
+                              Text(
+                                FlutterI18n.translate(
+                                  context,
+                                  "screenshotDetailScreen.deleteComment",
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -262,7 +294,10 @@ class _ScreenshotDetailScreenState
                     child: Text(
                       currentScreenshot.comment?.isNotEmpty == true
                           ? currentScreenshot.comment!
-                          : 'コメントはありません。タップして編集できます。',
+                          : FlutterI18n.translate(
+                            context,
+                            "screenshotDetailScreen.noComment",
+                          ),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color:
                             currentScreenshot.comment?.isNotEmpty == true
@@ -283,7 +318,10 @@ class _ScreenshotDetailScreenState
             Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'タップでコメントを編集',
+                FlutterI18n.translate(
+                  context,
+                  "screenshotDetailScreen.tapToEdit",
+                ),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
@@ -299,10 +337,22 @@ class _ScreenshotDetailScreenState
   ) async {
     final confirmed = await ConfirmationDialog.show(
       context,
-      title: 'Delete confirm',
-      content: 'Are you sure you want to delete this screenshot?',
-      cancelText: 'Cancel',
-      confirmText: 'Delete',
+      title: FlutterI18n.translate(
+        context,
+        "screenshotDetailScreen.deleteConfirm.title",
+      ),
+      content: FlutterI18n.translate(
+        context,
+        "screenshotDetailScreen.deleteConfirm.message",
+      ),
+      cancelText: FlutterI18n.translate(
+        context,
+        "screenshotDetailScreen.deleteConfirm.cancel",
+      ),
+      confirmText: FlutterI18n.translate(
+        context,
+        "screenshotDetailScreen.deleteConfirm.confirm",
+      ),
     );
 
     if (confirmed) {
@@ -323,7 +373,14 @@ class _ScreenshotDetailScreenState
         }
       } catch (e) {
         if (context.mounted) {
-          await ErrorDialog.show(context, message: 'ファイル削除中にエラーが発生しました: $e');
+          await ErrorDialog.show(
+            context,
+            message: FlutterI18n.translate(
+              context,
+              "screenshotDetailScreen.error.deleteFailed",
+              translationParams: {"error": e.toString()},
+            ),
+          );
         }
       }
     }

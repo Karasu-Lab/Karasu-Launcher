@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:karasu_launcher/models/screenshot.dart';
 import 'package:karasu_launcher/providers/screenshots_provider.dart';
 
@@ -22,19 +23,26 @@ class ScreenshotCommentDialog extends ConsumerWidget {
     );
 
     return AlertDialog(
-      title: const Text('コメントを編集'),
+      title: Text(
+        FlutterI18n.translate(context, "screenshotCommentDialog.title"),
+      ),
       content: TextField(
         controller: commentController,
-        decoration: const InputDecoration(
-          hintText: 'スクリーンショットにコメントを追加',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          hintText: FlutterI18n.translate(
+            context,
+            "screenshotCommentDialog.hintText",
+          ),
+          border: const OutlineInputBorder(),
         ),
         maxLines: 5,
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
+          child: Text(
+            FlutterI18n.translate(context, "screenshotCommentDialog.cancel"),
+          ),
         ),
         TextButton(
           onPressed: () async {
@@ -52,11 +60,20 @@ class ScreenshotCommentDialog extends ConsumerWidget {
               }
             } catch (e) {
               if (context.mounted) {
-                _showErrorDialog(context, 'コメントの保存中にエラーが発生しました: $e');
+                _showErrorDialog(
+                  context,
+                  FlutterI18n.translate(
+                    context,
+                    "screenshotCommentDialog.error.saveFailed",
+                    translationParams: {"error": e.toString()},
+                  ),
+                );
               }
             }
           },
-          child: const Text('保存'),
+          child: Text(
+            FlutterI18n.translate(context, "screenshotCommentDialog.save"),
+          ),
         ),
       ],
     );
@@ -67,12 +84,22 @@ class ScreenshotCommentDialog extends ConsumerWidget {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('エラー'),
+            title: Text(
+              FlutterI18n.translate(
+                context,
+                "screenshotCommentDialog.error.title",
+              ),
+            ),
             content: Text(message),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('閉じる'),
+                child: Text(
+                  FlutterI18n.translate(
+                    context,
+                    "screenshotCommentDialog.error.close",
+                  ),
+                ),
               ),
             ],
           ),

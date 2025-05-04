@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:karasu_launcher/models/auth/account.dart';
 import 'package:karasu_launcher/widgets/minecraft_face.dart';
 import '../../providers/authentication_provider.dart';
@@ -51,27 +52,12 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
   Decoration _getBorderDecoration(bool isActive, bool isSwitching) {
     if (isSwitching) {
       final double animValue = _animationController.value;
+
+      final color = Color.lerp(Colors.blue, Colors.green, animValue)!;
+
       return BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        gradient: SweepGradient(
-          center: Alignment.center,
-          startAngle: 0,
-          endAngle: 2 * 3.14159,
-          colors: [
-            Colors.blue,
-            Colors.lightBlue,
-            Colors.cyan,
-            Colors.teal,
-            Colors.green,
-            Colors.teal,
-            Colors.cyan,
-            Colors.lightBlue,
-            Colors.blue,
-          ],
-          stops: const [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0],
-          transform: GradientRotation(animValue * 2 * 3.14159),
-        ),
-        border: Border.all(width: 2, color: Colors.transparent),
+        border: Border.all(width: 2, color: color),
       );
     } else if (isActive) {
       return BoxDecoration(
@@ -212,17 +198,37 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
               children: [
                 const SizedBox(height: 4),
                 Text(
-                  isActive ? 'アクティブなアカウント' : '',
+                  isActive
+                      ? FlutterI18n.translate(
+                        context,
+                        'accountHome.activeAccount',
+                      )
+                      : '',
                   style: const TextStyle(
                     color: Colors.blue,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 Text(
-                  account.hasValidMinecraftToken ? '認証済み' : 'トークン期限切れ',
+                  isRefreshing
+                      ? FlutterI18n.translate(
+                        context,
+                        'accountHome.tokenRefreshing',
+                      )
+                      : account.hasValidMinecraftToken
+                      ? FlutterI18n.translate(
+                        context,
+                        'accountHome.authenticated',
+                      )
+                      : FlutterI18n.translate(
+                        context,
+                        'accountHome.tokenExpired',
+                      ),
                   style: TextStyle(
                     color:
-                        account.hasValidMinecraftToken
+                        isRefreshing
+                            ? Colors.yellow
+                            : account.hasValidMinecraftToken
                             ? Colors.green
                             : Colors.red,
                   ),
@@ -248,7 +254,10 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                             color: Colors.blue,
                             size: 20,
                           ),
-                  tooltip: 'トークンを更新',
+                  tooltip: FlutterI18n.translate(
+                    context,
+                    'accountHome.refreshToken',
+                  ),
                   onPressed:
                       _switchingAccountId != null ||
                               _refreshingAccountId != null
@@ -281,7 +290,10 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                 if (isActive == true)
                   IconButton(
                     icon: const Icon(Icons.check_box, color: Colors.green),
-                    tooltip: 'アクティブなアカウント',
+                    tooltip: FlutterI18n.translate(
+                      context,
+                      'accountHome.activeAccount',
+                    ),
                     onPressed: null,
                   ),
                 if (isActive == false)
@@ -311,7 +323,10 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                   ),
                 IconButton(
                   icon: const Icon(Icons.arrow_forward_ios, size: 18),
-                  tooltip: 'プロフィール詳細',
+                  tooltip: FlutterI18n.translate(
+                    context,
+                    'accountHome.profileDetails',
+                  ),
                   onPressed:
                       _switchingAccountId != null ||
                               _refreshingAccountId != null
@@ -337,13 +352,13 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('アカウント管理'),
+        title: Text(FlutterI18n.translate(context, 'accountHome.title')),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add),
-            tooltip: '新規アカウントを追加',
+            tooltip: FlutterI18n.translate(context, 'accountHome.addAccount'),
             onPressed: () => context.go('/accounts/sign-in'),
           ),
           const SizedBox(width: 16),
@@ -357,124 +372,162 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Minecraftアカウント',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  FlutterI18n.translate(
+                    context,
+                    'accountHome.minecraftAccounts',
+                  ),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                if (isOfflineMode)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withAlpha((0.2 * 255).toInt()),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange),
-                    ),
-                    child: const Text(
-                      'オフラインモード',
-                      style: TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        isOfflineMode
+                            ? Colors.orange.withAlpha((0.2 * 255).toInt())
+                            : Colors.blue.withAlpha((0.2 * 255).toInt()),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isOfflineMode ? Colors.orange : Colors.blue,
                     ),
                   ),
+                  child: Text(
+                    FlutterI18n.translate(
+                      context,
+                      isOfflineMode
+                          ? 'accountHome.offlineMode'
+                          : 'accountHome.onlineMode',
+                    ),
+                    style: TextStyle(
+                      color: isOfflineMode ? Colors.orange : Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),
 
             if (accounts.isEmpty) ...[
-              const Center(
-                child: Text('アカウントがありません', style: TextStyle(fontSize: 16)),
+              Center(
+                child: Text(
+                  FlutterI18n.translate(context, 'accountHome.noAccounts'),
+                  style: const TextStyle(fontSize: 16),
+                ),
               ),
             ] else ...[
-              if (isOfflineMode)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.orange, width: 2),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    leading: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withAlpha((0.2 * 255).toInt()),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(
-                        Icons.videogame_asset_outlined,
-                        color: Colors.orange,
-                        size: 20,
-                      ),
-                    ),
-                    title: const Text(
-                      'オフラインモード',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    subtitle: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 4),
-                        Text(
-                          'デモモードでMinecraftを起動します',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               Expanded(
-                child: ReorderableListView.builder(
-                  buildDefaultDragHandles: false,
-                  itemCount: accounts.entries.length,
-                  onReorderStart: (_) {
-                    if (_switchingAccountId != null ||
-                        _refreshingAccountId != null) {
-                      return;
-                    }
-                    setState(() {
-                      _isReordering = true;
-                    });
-                  },
-                  onReorderEnd: (_) {
-                    setState(() {
-                      _isReordering = false;
-                    });
-                  },
-                  onReorder: (oldIndex, newIndex) async {
-                    if (_switchingAccountId != null ||
-                        _refreshingAccountId != null) {
-                      return;
-                    }
+                child: Column(
+                  children: [
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color:
+                              isOfflineMode
+                                  ? Colors.orange
+                                  : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        leading: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withAlpha((0.2 * 255).toInt()),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(
+                            Icons.videogame_asset_outlined,
+                            color: Colors.orange,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          FlutterI18n.translate(
+                            context,
+                            'accountHome.offlineMode',
+                          ),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Text(
+                              FlutterI18n.translate(
+                                context,
+                                'accountHome.demoMode',
+                              ),
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
+                        itemCount: accounts.entries.length,
+                        onReorderStart: (_) {
+                          if (_switchingAccountId != null ||
+                              _refreshingAccountId != null) {
+                            return;
+                          }
+                          setState(() {
+                            _isReordering = true;
+                          });
+                        },
+                        onReorderEnd: (_) {
+                          setState(() {
+                            _isReordering = false;
+                          });
+                        },
+                        onReorder: (oldIndex, newIndex) async {
+                          if (_switchingAccountId != null ||
+                              _refreshingAccountId != null) {
+                            return;
+                          }
 
-                    final success = await ref
-                        .read(authenticationProvider.notifier)
-                        .swapAccountIndexes(oldIndex, newIndex);
+                          final success = await ref
+                              .read(authenticationProvider.notifier)
+                              .swapAccountIndexes(oldIndex, newIndex);
 
-                    if (success && context.mounted) {
-                      debugPrint("アカウントの順序を変更しました: $oldIndex → $newIndex");
-                    }
-                  },
-                  itemBuilder: (context, index) {
-                    final entry = accounts.entries.elementAt(index);
-                    final account = entry.value;
-                    final isActive =
-                        activeAccount != null && account.id == activeAccount.id;
+                          if (success && context.mounted) {
+                            debugPrint(
+                              "アカウントの順序を変更しました: $oldIndex → $newIndex",
+                            );
+                          }
+                        },
+                        itemBuilder: (context, index) {
+                          final entry = accounts.entries.elementAt(index);
+                          final account = entry.value;
+                          final isActive =
+                              activeAccount != null &&
+                              account.id == activeAccount.id;
 
-                    return _buildAccountCard(account, isActive, index);
-                  },
+                          return _buildAccountCard(account, isActive, index);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -502,7 +555,15 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                           : Icons.videogame_asset_outlined,
                     ),
                     label: Text(
-                      isOfflineMode ? 'オンラインモードに戻る' : 'オフラインモードに切り替え',
+                      isOfflineMode
+                          ? FlutterI18n.translate(
+                            context,
+                            'accountHome.toggleToOnline',
+                          )
+                          : FlutterI18n.translate(
+                            context,
+                            'accountHome.toggleToOffline',
+                          ),
                       style: TextStyle(
                         fontSize: 16,
                         color: isOfflineMode ? Colors.orange : null,

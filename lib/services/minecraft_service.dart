@@ -25,19 +25,19 @@ class MinecraftService {
     notifier.setLaunching(true);
     notifier.updateProgress(0.0, '準備中...');
     notifier.addLog(
-      'Minecraftの起動を開始します (バージョン: ${profile.lastVersionId})',
+      'Starting Minecraft (Version: ${profile.lastVersionId})',
       level: LogLevel.info,
     );
 
     if (account != null) {
       notifier.addLog(
-        'アカウント: ${account.profile?.name ?? "不明"} としてログインします',
+        'Logging in as account: ${account.profile?.name ?? "Unknown"}',
         level: LogLevel.info,
       );
     } else {
       final playerName = offlinePlayerName ?? 'Player';
       notifier.addLog(
-        '警告: アクティブなアカウントが見つかりません。オフラインモードで起動します (プレイヤー名: $playerName)',
+        'Warning: No active account found. Launching in offline mode (Player name: $playerName)',
         level: LogLevel.warning,
       );
     }
@@ -57,7 +57,10 @@ class MinecraftService {
         offlinePlayerName: offlinePlayerName,
       );
     } catch (e) {
-      notifier.addLog('Minecraftの起動中にエラーが発生しました: $e', level: LogLevel.error);
+      notifier.addLog(
+        'An error occurred while launching Minecraft: $e',
+        level: LogLevel.error,
+      );
       notifier.resetProgress();
     }
   }
@@ -73,7 +76,10 @@ class MinecraftService {
     } catch (e) {
       _ref
           .read(minecraftStateProvider.notifier)
-          .addLog('標準出力の処理中にエラーが発生しました: $e', level: LogLevel.error);
+          .addLog(
+            'Error processing standard output: $e',
+            level: LogLevel.error,
+          );
     }
   }
 
@@ -89,7 +95,10 @@ class MinecraftService {
     } catch (e) {
       _ref
           .read(minecraftStateProvider.notifier)
-          .addLog('標準エラー出力の処理中にエラーが発生しました: $e', level: LogLevel.error);
+          .addLog(
+            'Error processing standard error output: $e',
+            level: LogLevel.error,
+          );
     }
   }
 

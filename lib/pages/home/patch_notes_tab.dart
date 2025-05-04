@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/patch_note_card.dart';
 import '../../api/Minecraft.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 class PatchNotesTab extends StatefulWidget {
   const PatchNotesTab({super.key});
@@ -60,7 +61,8 @@ class _PatchNotesTabState extends State<PatchNotesTab> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'パッチノートの取得に失敗しました: ${e.toString()}';
+          _errorMessage =
+              '${FlutterI18n.translate(context, 'patchNotesTab.fetchError')}: ${e.toString()}';
           _isLoading = false;
         });
       }
@@ -85,7 +87,9 @@ class _PatchNotesTabState extends State<PatchNotesTab> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _fetchPatchNotes,
-              child: const Text('再試行'),
+              child: Text(
+                FlutterI18n.translate(context, 'patchNotesTab.retry'),
+              ),
             ),
           ],
         ),
@@ -93,13 +97,13 @@ class _PatchNotesTabState extends State<PatchNotesTab> {
     }
 
     if (_patchNotes.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.article, size: 48),
-            SizedBox(height: 16),
-            Text('パッチノートがありません'),
+            const Icon(Icons.article, size: 48),
+            const SizedBox(height: 16),
+            Text(FlutterI18n.translate(context, 'patchNotesTab.noPatchNotes')),
           ],
         ),
       );

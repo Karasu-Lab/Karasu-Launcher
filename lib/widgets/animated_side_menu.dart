@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import '../providers/side_menu_provider.dart';
 import '../providers/authentication_provider.dart';
 import './account/user_icon.dart';
@@ -108,7 +109,7 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
                   children: [
                     _buildMenuItem(
                       Icons.monitor,
-                      'タスクマネージャー',
+                      FlutterI18n.translate(context, "sideMenu.taskManager"),
                       path: '/taskmanager',
                     ),
                     Consumer(
@@ -120,12 +121,16 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
                             size: 21,
                             borderRadius: 4,
                           ),
-                          'アカウント',
+                          FlutterI18n.translate(context, "sideMenu.accounts"),
                           path: '/accounts',
                         );
                       },
                     ),
-                    _buildMenuItem(Icons.settings, '設定', path: '/settings'),
+                    _buildMenuItem(
+                      Icons.settings,
+                      FlutterI18n.translate(context, "sideMenu.settings"),
+                      path: '/settings',
+                    ),
                     _buildMenuItem(
                       BoxIcons.bxl_github,
                       'GitHub',

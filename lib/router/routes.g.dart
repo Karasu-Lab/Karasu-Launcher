@@ -32,15 +32,6 @@ RouteBase get $mainShellRouteData => StatefulShellRouteData.$route(
     StatefulShellBranchData.$branch(
       routes: [
         GoRouteData.$route(
-          path: '/profile',
-
-          factory: $ProfilePageRouteExtension._fromState,
-        ),
-      ],
-    ),
-    StatefulShellBranchData.$branch(
-      routes: [
-        GoRouteData.$route(
           path: '/mod',
 
           factory: $ModRouteExtension._fromState,
@@ -149,22 +140,6 @@ extension $SettingPageRouteExtension on SettingPageRoute {
       const SettingPageRoute();
 
   String get location => GoRouteData.$location('/settings');
-
-  void go(BuildContext context) => context.go(location);
-
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  void replace(BuildContext context) => context.replace(location);
-}
-
-extension $ProfilePageRouteExtension on ProfilePageRoute {
-  static ProfilePageRoute _fromState(GoRouterState state) =>
-      const ProfilePageRoute();
-
-  String get location => GoRouteData.$location('/profile');
 
   void go(BuildContext context) => context.go(location);
 

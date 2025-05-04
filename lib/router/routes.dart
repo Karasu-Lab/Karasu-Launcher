@@ -16,7 +16,6 @@ import 'package:karasu_launcher/widgets/side_menu_toggle_button.dart';
 
 import '../pages/home_page.dart';
 import '../pages/setting_page.dart';
-import '../pages/account/profile_page.dart';
 import '../pages/loading_page.dart';
 import '../pages/account/account_home_page.dart';
 import '../pages/account/account_sign_in_page.dart';
@@ -26,7 +25,6 @@ import '../pages/taskmanager_page.dart';
 part 'routes.g.dart';
 part 'branch/home_branch.dart';
 part 'branch/setting_branch.dart';
-part 'branch/profile_branch.dart';
 part 'branch/mod_branch.dart';
 part 'branch/server_branch.dart';
 part 'branch/social_branch.dart';
@@ -52,7 +50,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   branches: <TypedStatefulShellBranch<StatefulShellBranchData>>[
     homeStatefulShellBranch,
     settingStatefulShellBranch,
-    profileStatefulShellBranch,
     modStatefulShellBranch,
     serverStatefulShellBranch,
     socialStatefulShellBranch,

@@ -44,22 +44,21 @@ Future<File> downloadFile(
     if (expectedSize == null || fileSize == expectedSize) {
       return file;
     }
-    debugPrint('ファイルのサイズが一致しないため再ダウンロードします: $filePath');
+    debugPrint('File size mismatch, re-downloading: $filePath');
   }
 
   await createParentDirectoryFromFilePath(filePath);
 
   try {
-    debugPrint('ファイルのダウンロードを開始: $url');
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode != 200) {
-      throw Exception('ファイルのダウンロードに失敗しました: ${response.statusCode}');
+      throw Exception('Failed to download file: ${response.statusCode}');
     }
 
     return await file.writeAsBytes(response.bodyBytes);
   } catch (e) {
-    throw Exception('ファイルのダウンロード中にエラーが発生しました: $e');
+    throw Exception('Error occurred while downloading file: $e');
   }
 }
 
@@ -68,12 +67,12 @@ Future<LauncherVersionsV2> fetchVersionManifest() async {
     final response = await http.get(Uri.parse(MINECRAFT_VERSION_MANIFEST_URL));
 
     if (response.statusCode != 200) {
-      throw Exception('バージョンマニフェストの取得に失敗しました: ${response.statusCode}');
+      throw Exception('Failed to get version manifest: ${response.statusCode}');
     }
 
     return LauncherVersionsV2.fromJson(json.decode(response.body));
   } catch (e) {
-    throw Exception('バージョンマニフェストのパースに失敗しました: $e');
+    throw Exception('Failed to parse version manifest: $e');
   }
 }
 
@@ -142,9 +141,9 @@ Future<void> downloadMinecraftClient(String versionId) async {
 
     final clientJarFile = await downloadClientJar(versionInfo);
 
-    debugPrint('クライアントのダウンロード完了: ${clientJarFile.path}');
+    debugPrint('Client download completed: ${clientJarFile.path}');
   } catch (e) {
-    throw Exception('Minecraftクライアントのダウンロードに失敗しました: $e');
+    throw Exception('Failed to download Minecraft client: $e');
   }
 }
 
@@ -154,9 +153,9 @@ Future<void> downloadMinecraftComplete(String versionId) async {
     await downloadMinecraftAssets(versionId);
     await downloadMinecraftLibraries(versionId);
 
-    debugPrint('Minecraftバージョン $versionId の完全ダウンロードが完了しました');
+    debugPrint('Complete download of Minecraft version $versionId finished');
   } catch (e) {
-    throw Exception('Minecraftの完全ダウンロードに失敗しました: $e');
+    throw Exception('Failed to complete Minecraft download: $e');
   }
 }
 
@@ -217,7 +216,7 @@ Future<void> downloadMinecraftAssets(
     final totalAssets = assetIndex.objects.length;
 
     debugPrint(
-      'ダウンロード開始: 全$totalAssetsアセット (合計: ${(totalSize / 1024 / 1024).toStringAsFixed(2)}MB)',
+      'Starting download: $totalAssets assets (Total: ${(totalSize / 1024 / 1024).toStringAsFixed(2)}MB)',
     );
 
     for (final entry in assetIndex.objects.entries) {
@@ -238,14 +237,14 @@ Future<void> downloadMinecraftAssets(
                 ((downloadedSize - assetObj.size) * 100 / totalSize)
                     .floor())) {}
       } catch (e) {
-        debugPrint('アセット ${entry.key} のダウンロードに失敗: $e');
+        debugPrint('Failed to download asset ${entry.key}: $e');
       }
     }
 
     final percentage = (downloadedSize * 100 / totalSize).toStringAsFixed(1);
-    debugPrint('ダウンロード完了: $downloaded / $totalAssets アセット ($percentage%)');
+    debugPrint('Download complete: $downloaded / $totalAssets assets ($percentage%)');
   } catch (e) {
-    throw Exception('Minecraftアセットのダウンロードに失敗しました: $e');
+    throw Exception('Failed to download Minecraft assets: $e');
   }
 }
 
@@ -267,7 +266,7 @@ Future<File?> downloadLibrary(Libraries library, Directory librariesDir) async {
       expectedSize: library.downloads!.artifact!.size,
     );
   } catch (e) {
-    debugPrint('ライブラリ ${library.name} のダウンロードに失敗しました: $e');
+    debugPrint('Failed to download library ${library.name}: $e');
     return null;
   }
 }
@@ -283,7 +282,7 @@ Future<void> downloadMinecraftLibraries(
     final versionInfo = await fetchVersionInfo(versionId);
 
     if (versionInfo.libraries == null || versionInfo.libraries!.isEmpty) {
-      debugPrint('このバージョンにはライブラリがありません: $versionId');
+      debugPrint('No libraries for this version: $versionId');
       return;
     }
 
@@ -299,7 +298,7 @@ Future<void> downloadMinecraftLibraries(
     final totalLibraries = versionInfo.libraries!.length;
 
     debugPrint(
-      'ライブラリダウンロード開始: 全$totalLibraries個 (合計: ${(totalSize / 1024 / 1024).toStringAsFixed(2)}MB)',
+      'Library download starting: $totalLibraries total (Total: ${(totalSize / 1024 / 1024).toStringAsFixed(2)}MB)',
     );
 
     for (final library in versionInfo.libraries!) {
@@ -331,8 +330,7 @@ Future<void> downloadMinecraftLibraries(
                             totalSize)
                         .floor())) {}
       } catch (e) {
-        debugPrint('ライブラリ ${library.name} のダウンロード処理に失敗: $e');
-        // 個別のエラーはスキップして続行
+        debugPrint('Failed to process library download ${library.name}: $e');
       }
     }
 
@@ -340,9 +338,9 @@ Future<void> downloadMinecraftLibraries(
         totalSize > 0
             ? (downloadedSize * 100 / totalSize).toStringAsFixed(1)
             : "100.0";
-    debugPrint('ライブラリダウンロード完了: $downloaded / $totalLibraries 個 ($percentage%)');
+    debugPrint('Library download complete: $downloaded / $totalLibraries items ($percentage%)');
   } catch (e) {
-    throw Exception('Minecraftライブラリのダウンロードに失敗しました: $e');
+    throw Exception('Failed to download Minecraft libraries: $e');
   }
 }
 
@@ -370,9 +368,9 @@ Future<void> downloadRequiredMinecraftFiles(
       onProgress: onNativesProgress,
     );
 
-    debugPrint('Minecraftバージョン $versionId の必要ファイルのダウンロードが完了しました');
+    debugPrint('Download of required files for Minecraft version $versionId completed');
   } catch (e) {
-    throw Exception('Minecraftファイルのダウンロードに失敗しました: $e');
+    throw Exception('Failed to download Minecraft files: $e');
   }
 }
 
@@ -392,7 +390,7 @@ Future<Process> launchMinecraft(
   try {
     final versionId = profile.lastVersionId;
     if (versionId == null || versionId.isEmpty) {
-      throw Exception('プロファイルにバージョンIDが指定されていません');
+      throw Exception('No version ID specified in profile');
     }
 
     final gameDir =
@@ -400,7 +398,7 @@ Future<Process> launchMinecraft(
             ? Directory(profile.gameDir!)
             : await createAppDirectory();
 
-    debugPrint('Minecraftバージョン $versionId を起動しています...');
+    debugPrint('Launching Minecraft version $versionId...');
 
     await downloadRequiredMinecraftFiles(
       versionId,
@@ -414,7 +412,6 @@ Future<Process> launchMinecraft(
     final appDir = await createAppDirectory();
     final nativeDir = p.join(appDir.path, 'natives', versionId);
 
-    // ネイティブライブラリは既にdownloadRequiredMinecraftFilesで抽出されているため、ここでの抽出は不要に
     final jvmArgs = await constructJvmArguments(
       versionInfo: versionInfo,
       nativeDir: nativeDir,
@@ -440,7 +437,7 @@ Future<Process> launchMinecraft(
     }
     final mainClass = versionInfo.mainClass;
     if (mainClass == null || mainClass.isEmpty) {
-      throw Exception('バージョン情報にmainClassが指定されていません');
+      throw Exception('No mainClass specified in version info');
     }
 
     final gameArgs = await constructGameArgumentsWithAuth(
@@ -455,9 +452,9 @@ Future<Process> launchMinecraft(
     final javaPath = await findJavaPath(profile);
     final command = [...finalJvmArgs, mainClass, ...gameArgs];
 
-    debugPrint('Javaパス: $javaPath');
-    debugPrint('ゲームディレクトリ: ${gameDir.path}');
-    debugPrint('起動コマンド: $javaPath ${command.join(' ')}');
+    debugPrint('Java path: $javaPath');
+    debugPrint('Game directory: ${gameDir.path}');
+    debugPrint('Launch command: $javaPath ${command.join(' ')}');
 
     if (onPrepareComplete != null) {
       onPrepareComplete();
@@ -480,7 +477,7 @@ Future<Process> launchMinecraft(
             }
           },
           onError: (error) {
-            debugPrint('[Minecraft] 標準出力の処理中にエラーが発生しました: $error');
+            debugPrint('[Minecraft] Error processing standard output: $error');
           },
         );
 
@@ -495,11 +492,11 @@ Future<Process> launchMinecraft(
             }
           },
           onError: (error) {
-            debugPrint('[Minecraft Error] 標準エラー出力の処理中にエラーが発生しました: $error');
+            debugPrint('[Minecraft Error] Error processing standard error output: $error');
           },
         );
 
-    debugPrint('Minecraftプロセスを起動しました。PID: ${process.pid}');
+    debugPrint('Minecraft process launched. PID: ${process.pid}');
 
     if (onMinecraftLaunch != null) {
       onMinecraftLaunch();
@@ -510,12 +507,12 @@ Future<Process> launchMinecraft(
         final isNormalExit = exitCode == 0 || exitCode == 143; // 143はSIGTERM
         onExit(exitCode, isNormalExit, account?.id, profile.id);
       }
-      debugPrint('Minecraftプロセスが終了しました。終了コード: $exitCode');
+      debugPrint('Minecraft process exited. Exit code: $exitCode');
     });
 
     return process;
   } catch (e) {
-    throw Exception('Minecraftの起動に失敗しました: $e');
+    throw Exception('Failed to launch Minecraft: $e');
   }
 }
 
@@ -524,11 +521,11 @@ Future<void> extractNativeLibraries(
   String nativesDir, {
   ProgressCallback? onProgress,
 }) async {
-  debugPrint('ネイティブライブラリの抽出を開始...');
+  debugPrint('Starting extraction of native libraries...');
 
   if (versionInfo.libraries == null) {
-    debugPrint('ライブラリ情報がありません');
-    // 情報がない場合でも100%完了を報告
+    debugPrint('No library information available');
+    // Report 100% completion even if there's no information
     if (onProgress != null) {
       onProgress(1.0, 1, 1);
     }
@@ -582,7 +579,7 @@ Future<void> extractNativeLibraries(
 
   // ネイティブライブラリがない場合は早期リターン
   if (nativeLibraries.isEmpty) {
-    debugPrint('抽出すべきネイティブライブラリがありません');
+    debugPrint('No native libraries to extract');
     if (onProgress != null) {
       onProgress(1.0, 1, 1);
     }
@@ -638,7 +635,7 @@ Future<void> extractNativeLibraries(
       final nativeJarFile = File(nativeJarPath);
 
       if (!await nativeJarFile.exists()) {
-        debugPrint('ネイティブライブラリが見つかりません: $nativeJarPath');
+        debugPrint('Native library not found: $nativeJarPath');
         processed++;
         if (onProgress != null) {
           onProgress(processed / total, processed, total);
@@ -646,7 +643,7 @@ Future<void> extractNativeLibraries(
         continue;
       }
 
-      debugPrint('ネイティブライブラリを抽出中: $nativeJarPath');
+      debugPrint('Extracting native library: $nativeJarPath');
 
       final tempJarDir = p.join(
         tempDir,
@@ -665,14 +662,14 @@ Future<void> extractNativeLibraries(
       }
     }
 
-    debugPrint('ネイティブライブラリの抽出が完了しました');
+    debugPrint('Native library extraction completed');
   } catch (e) {
-    debugPrint('ネイティブライブラリの抽出中にエラーが発生しました: $e');
+    debugPrint('Error occurred during native library extraction: $e');
   } finally {
     try {
       await Directory(tempDir).delete(recursive: true);
     } catch (e) {
-      debugPrint('一時ディレクトリの削除に失敗しました: $e');
+      debugPrint('Failed to delete temporary directory: $e');
     }
 
     // 完了時に確実に100%の進捗を報告
@@ -696,7 +693,7 @@ Future<void> extractJar(String jarPath, String targetDir) async {
         return;
       }
     } catch (e) {
-      debugPrint('jarコマンドでの解凍に失敗: $e');
+      debugPrint('Failed to extract using jar command: $e');
     }
 
     try {
@@ -714,12 +711,12 @@ Future<void> extractJar(String jarPath, String targetDir) async {
         return;
       }
     } catch (e) {
-      debugPrint('ZIPとしての解凍に失敗: $e');
+      debugPrint('Failed to extract as ZIP: $e');
     }
 
-    debugPrint('警告: JARファイルの解凍に失敗しました - 追加のライブラリが必要な場合があります');
+    debugPrint('Warning: Failed to extract JAR file - additional libraries may be required');
   } catch (e) {
-    debugPrint('JARファイルの解凍に失敗: $e');
+    debugPrint('Failed to extract JAR file: $e');
   }
 }
 
@@ -744,7 +741,7 @@ Future<void> copyNativeFiles(String sourceDir, String targetDir) async {
       }
     }
   } catch (e) {
-    debugPrint('ネイティブファイルのコピーに失敗しました: $e');
+    debugPrint('Failed to copy native files: $e');
   }
 }
 
@@ -883,9 +880,9 @@ Future<List<String>> constructGameArgumentsWithAuth({
   Account? account,
   String? offlinePlayerName,
 }) async {
-  // アカウントがない場合はオフラインモード
+  // オフラインモードの場合
   if (account == null) {
-    debugPrint('アカウント情報がありません。オフラインモードで起動します');
+    debugPrint('No account information. Launching in offline mode');
     final username = offlinePlayerName ?? 'Player';
     final args = await constructGameArguments(
       versionInfo: versionInfo,
@@ -902,7 +899,7 @@ Future<List<String>> constructGameArgumentsWithAuth({
 
     // --demoフラグが含まれていなければ追加（重複防止）
     if (!args.contains('--demo')) {
-      debugPrint('デモモードで起動します');
+      debugPrint('Launching in demo mode');
       args.add('--demo');
     }
 
@@ -930,15 +927,15 @@ Future<List<String>> constructGameArgumentsWithAuth({
           hasGameOwnership = items.isNotEmpty;
         }
       }
-      debugPrint('Minecraft所有権チェック結果: $hasGameOwnership');
+      debugPrint('Minecraft ownership check result: $hasGameOwnership');
     } catch (e) {
-      debugPrint('所有権チェックエラー: $e');
-      // エラーの場合は所有権がないと見なす
+      debugPrint('Ownership check error: $e');
+      // Consider as no ownership in case of error
       hasGameOwnership = false;
     }
   } else {
-    // アクセストークンがない場合も所有権なしとみなす
-    debugPrint('アクセストークンがありません。所有権なしとみなします。');
+    // Consider as no ownership if no access token
+    debugPrint('No access token available. Assuming no game ownership.');
     hasGameOwnership = false;
   }
 
@@ -963,7 +960,7 @@ Future<List<String>> constructGameArgumentsWithAuth({
 
   // 所有権がない場合はデモモードで起動
   if (!hasGameOwnership) {
-    debugPrint('Minecraft: Java Editionの所有権がありません。デモモードで起動します');
+    debugPrint('No ownership of Minecraft: Java Edition. Launching in demo mode');
     // --demoフラグが含まれていなければ追加（重複防止）
     if (!args.contains('--demo')) {
       args.add('--demo');
@@ -1128,7 +1125,7 @@ Future<List<String>> constructGameArguments({
       }
     }
 
-    debugPrint('最終的なゲーム引数: ${args.join(' ')}');
+    debugPrint('Final game arguments: ${args.join(' ')}');
   } else {
     final defaultArgs = [
       '--username',

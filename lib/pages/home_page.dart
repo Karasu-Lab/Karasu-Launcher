@@ -9,6 +9,7 @@ import 'package:karasu_launcher/pages/home/launch_config_tab.dart';
 import 'package:karasu_launcher/pages/home/patch_notes_tab.dart';
 import 'package:karasu_launcher/pages/home/log_tab.dart';
 import 'package:karasu_launcher/providers/authentication_provider.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -20,12 +21,8 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   int _currentTabIndex = 0;
 
-  final List<TabItem> _tabs = const [
-    TabItem(title: 'プレイ', content: PlayTab()),
-    TabItem(title: '起動構成', content: LaunchConfigTab()),
-    TabItem(title: '公式パッチノート', content: PatchNotesTab()),
-    TabItem(title: 'ログ', content: LogTab()),
-  ];
+  List<TabItem> _tabs = [];
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +34,27 @@ class _HomePageState extends ConsumerState<HomePage> {
       if (profilesData != null && ref.read(selectedProfileProvider) == null) {
         _findAndSelectLastUsedProfile();
       }
+
+      setState(() {
+        _tabs = [
+          TabItem(
+            title: FlutterI18n.translate(context, 'homePage.tabs.play'),
+            content: const PlayTab(),
+          ),
+          TabItem(
+            title: FlutterI18n.translate(context, 'homePage.tabs.launchConfig'),
+            content: const LaunchConfigTab(),
+          ),
+          TabItem(
+            title: FlutterI18n.translate(context, 'homePage.tabs.patchNotes'),
+            content: const PatchNotesTab(),
+          ),
+          TabItem(
+            title: FlutterI18n.translate(context, 'homePage.tabs.log'),
+            content: const LogTab(),
+          ),
+        ];
+      });
     });
   }
 
@@ -86,11 +104,14 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final profilesData = ref.watch(profilesProvider);
     final selectedProfileId = ref.watch(selectedProfileProvider);
-
     final activeAccount = ref.watch(activeAccountProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_tabs[_currentTabIndex].title)),
+      appBar: AppBar(
+        title: Text(
+          _currentTabIndex < _tabs.length ? _tabs[_currentTabIndex].title : "",
+        ),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -167,8 +188,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                               );
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('選択されたプロファイルが見つかりません'),
+                                SnackBar(
+                                  content: Text(
+                                    FlutterI18n.translate(
+                                      context,
+                                      'homePage.error.profileNotFound',
+                                    ),
+                                  ),
                                 ),
                               );
                             }
@@ -201,7 +227,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           width:
                               MediaQuery.of(context).size.width *
                               0.4 *
-                              minecraftState.progressValue,
+                              minecraftState.progressValue.clamp(0.0, 1.0),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
@@ -238,11 +264,24 @@ class _HomePageState extends ConsumerState<HomePage> {
                               child: Text(
                                 selectedProfileId == null ||
                                         profilesData == null
-                                    ? 'プロファイルを選択してください'
+                                    ? FlutterI18n.translate(
+                                      context,
+                                      'homePage.button.selectProfile',
+                                    )
                                     : minecraftState.isLaunching &&
                                         minecraftState.isGlobalLaunching
                                     ? minecraftState.progressText
-                                    : 'Launch ${profilesData.profiles[selectedProfileId]?.name ?? 'Unknown'}',
+                                    : FlutterI18n.translate(
+                                      context,
+                                      'homePage.button.launch',
+                                      translationParams: {
+                                        "name":
+                                            profilesData
+                                                .profiles[selectedProfileId]
+                                                ?.name ??
+                                            'Unknown',
+                                      },
+                                    ),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -263,28 +302,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 textAlign: TextAlign.center,
                               ),
                             ),
-                            if (selectedProfileId != null &&
-                                profilesData != null &&
-                                !minecraftState.isGlobalLaunching)
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.account_circle,
-                                  color: Colors.white,
-                                ),
-                                onPressed: () async {
-                                  final userId =
-                                      activeAccount?.id ?? 'offline-user';
-
-                                  if (minecraftStateNotifier.isUserLaunching(
-                                    userId,
-                                  )) {
-                                    final shouldLaunch =
-                                        await _showDuplicateWarningDialog();
-                                    if (shouldLaunch != true) return;
-                                  }
-                                },
-                                tooltip: '別インスタンスで起動',
-                              ),
                           ],
                         ),
                       ),
@@ -304,20 +321,27 @@ class _HomePageState extends ConsumerState<HomePage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('警告'),
-            content: const Text(
-              '同じプロファイルのMinecraftインスタンスが既に起動中です。\n'
-              '同じプロファイルを複数起動すると問題が発生する可能性があります。\n\n'
-              '続行しますか？',
+            title: Text(
+              FlutterI18n.translate(context, 'homePage.warning.title'),
+            ),
+            content: Text(
+              FlutterI18n.translate(
+                context,
+                'homePage.warning.duplicateInstance',
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('キャンセル'),
+                child: Text(
+                  FlutterI18n.translate(context, 'homePage.actions.cancel'),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('起動する'),
+                child: Text(
+                  FlutterI18n.translate(context, 'homePage.actions.launch'),
+                ),
               ),
             ],
           ),
@@ -329,20 +353,27 @@ class _HomePageState extends ConsumerState<HomePage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('警告'),
-            content: const Text(
-              '同じプロファイルがすでに起動しています。\n'
-              '同じプロファイルを複数起動すると、セーブデータの破損など問題が発生する可能性があります。\n\n'
-              '続行しますか？',
+            title: Text(
+              FlutterI18n.translate(context, 'homePage.warning.title'),
+            ),
+            content: Text(
+              FlutterI18n.translate(
+                context,
+                'homePage.warning.duplicateProfile',
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('キャンセル'),
+                child: Text(
+                  FlutterI18n.translate(context, 'homePage.actions.cancel'),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('起動する'),
+                child: Text(
+                  FlutterI18n.translate(context, 'homePage.actions.launch'),
+                ),
               ),
             ],
           ),

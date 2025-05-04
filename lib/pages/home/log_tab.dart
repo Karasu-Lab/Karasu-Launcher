@@ -4,6 +4,7 @@ import 'package:karasu_launcher/models/minecraft_state.dart';
 import 'package:karasu_launcher/providers/minecraft_state_provider.dart';
 import 'dart:async';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 class LogTab extends ConsumerStatefulWidget {
   const LogTab({super.key});
@@ -162,10 +163,10 @@ class _LogTabState extends ConsumerState<LogTab>
             children: [
               Row(
                 children: [
-                  const Text('種類: '),
+                  Text('${FlutterI18n.translate(context, 'logTab.type')}: '),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('情報'),
+                    label: Text(FlutterI18n.translate(context, 'logTab.info')),
                     selected: _showInfoLogs,
                     onSelected: (value) {
                       setState(() {
@@ -177,7 +178,9 @@ class _LogTabState extends ConsumerState<LogTab>
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('アセット取得'),
+                    label: Text(
+                      FlutterI18n.translate(context, 'logTab.assetFetch'),
+                    ),
                     selected: _showDebugLogs,
                     onSelected: (value) {
                       setState(() {
@@ -188,7 +191,9 @@ class _LogTabState extends ConsumerState<LogTab>
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('ライブラリ取得'),
+                    label: Text(
+                      FlutterI18n.translate(context, 'logTab.libraryFetch'),
+                    ),
                     selected: _showWarningLogs,
                     onSelected: (value) {
                       setState(() {
@@ -199,7 +204,7 @@ class _LogTabState extends ConsumerState<LogTab>
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('エラー'),
+                    label: Text(FlutterI18n.translate(context, 'logTab.error')),
                     selected: _showErrorLogs,
                     onSelected: (value) {
                       setState(() {
@@ -213,10 +218,12 @@ class _LogTabState extends ConsumerState<LogTab>
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Text('ソース: '),
+                  Text('${FlutterI18n.translate(context, 'logTab.source')}: '),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('Java 標準出力'),
+                    label: Text(
+                      FlutterI18n.translate(context, 'logTab.javaStdOut'),
+                    ),
                     selected: _showJavaStdout,
                     onSelected: (value) {
                       setState(() {
@@ -227,7 +234,9 @@ class _LogTabState extends ConsumerState<LogTab>
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('Java エラー出力'),
+                    label: Text(
+                      FlutterI18n.translate(context, 'logTab.javaStdErr'),
+                    ),
                     selected: _showJavaStderr,
                     onSelected: (value) {
                       setState(() {
@@ -251,7 +260,7 @@ class _LogTabState extends ConsumerState<LogTab>
                           });
                         },
                       ),
-                      const Text('自動スクロール'),
+                      Text(FlutterI18n.translate(context, 'logTab.autoScroll')),
                     ],
                   ),
                   const SizedBox(width: 10),
@@ -259,7 +268,7 @@ class _LogTabState extends ConsumerState<LogTab>
                     onPressed: () {
                       _clearLogs();
                     },
-                    child: const Text("クリア"),
+                    child: Text(FlutterI18n.translate(context, 'logTab.clear')),
                   ),
                 ],
               ),
@@ -279,7 +288,11 @@ class _LogTabState extends ConsumerState<LogTab>
                 _isLoading
                     ? _buildLoadingState()
                     : _currentFilteredLogs.isEmpty
-                    ? const Center(child: Text('ログはありません'))
+                    ? Center(
+                      child: Text(
+                        FlutterI18n.translate(context, 'logTab.noLogs'),
+                      ),
+                    )
                     : RepaintBoundary(
                       child: CustomScrollView(
                         controller: _scrollController,
@@ -332,7 +345,7 @@ class _LogTabState extends ConsumerState<LogTab>
                     vertical: 4.0,
                   ),
                   child: Text(
-                    '[00:00:00] サンプルログメッセージ $index',
+                    '[00:00:00] ${FlutterI18n.translate(context, 'logTab.sampleLogMessage')} $index',
                     style: TextStyle(
                       color: _getColorForLogLevel(mockLevel),
                       fontSize: 13,

@@ -8,6 +8,7 @@ class MinecraftFace extends StatefulWidget {
   final ImageProvider imageProvider;
   final double size;
   final bool showOverlay;
+  final VoidCallback? onPressed;
 
   static final Map<String, ui.Image> _imageCache = {};
 
@@ -16,6 +17,7 @@ class MinecraftFace extends StatefulWidget {
     required this.imageProvider,
     this.size = 64.0,
     this.showOverlay = true,
+    this.onPressed,
   });
 
   factory MinecraftFace.network(
@@ -24,12 +26,14 @@ class MinecraftFace extends StatefulWidget {
     double size = 64.0,
     bool showOverlay = true,
     Map<String, String>? headers,
+    VoidCallback? onPressed,
   }) {
     return MinecraftFace(
       key: key,
       imageProvider: CachedNetworkImageProvider(url, headers: headers),
       size: size,
       showOverlay: showOverlay,
+      onPressed: onPressed,
     );
   }
 
@@ -40,12 +44,14 @@ class MinecraftFace extends StatefulWidget {
     bool showOverlay = true,
     AssetBundle? bundle,
     String? package,
+    VoidCallback? onPressed,
   }) {
     return MinecraftFace(
       key: key,
       imageProvider: AssetImage(assetName, bundle: bundle, package: package),
       size: size,
       showOverlay: showOverlay,
+      onPressed: onPressed,
     );
   }
 
@@ -55,12 +61,14 @@ class MinecraftFace extends StatefulWidget {
     double size = 64.0,
     bool showOverlay = true,
     double scale = 1.0,
+    VoidCallback? onPressed,
   }) {
     return MinecraftFace(
       key: key,
       imageProvider: MemoryImage(bytes, scale: scale),
       size: size,
       showOverlay: showOverlay,
+      onPressed: onPressed,
     );
   }
 
@@ -168,7 +176,7 @@ class _MinecraftFaceState extends State<MinecraftFace>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final content = SizedBox(
       width: widget.size,
       height: widget.size,
       child: Stack(
@@ -192,6 +200,15 @@ class _MinecraftFaceState extends State<MinecraftFace>
         ],
       ),
     );
+
+    if (widget.onPressed != null) {
+      return GestureDetector(
+        onTap: widget.onPressed,
+        child: MouseRegion(cursor: SystemMouseCursors.click, child: content),
+      );
+    }
+
+    return content;
   }
 
   Widget _buildPlaceholder() {

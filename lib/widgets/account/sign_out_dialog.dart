@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 class SignOutDialog extends StatelessWidget {
   const SignOutDialog({super.key, required this.accountName, this.onSignOut});
@@ -25,19 +26,28 @@ class SignOutDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('サインアウトの確認'),
-      content: Text('$accountNameをサインアウトしますか？'),
+      title: Text(FlutterI18n.translate(context, 'accountSignOut.title')),
+      content: Text(
+        FlutterI18n.translate(
+          context,
+          'accountSignOut.confirmationMessage',
+          translationParams: {"accountName": accountName},
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('キャンセル'),
+          child: Text(FlutterI18n.translate(context, 'accountSignOut.cancel')),
         ),
         TextButton(
           onPressed: () {
             onSignOut?.call();
             Navigator.of(context).pop(true);
           },
-          child: const Text('サインアウト', style: TextStyle(color: Colors.red)),
+          child: Text(
+            FlutterI18n.translate(context, 'accountSignOut.signOut'),
+            style: TextStyle(color: Colors.red),
+          ),
         ),
       ],
     );

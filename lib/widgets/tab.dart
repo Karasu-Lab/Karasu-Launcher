@@ -17,8 +17,7 @@ class TabWidget extends StatefulWidget {
   State<TabWidget> createState() => _TabWidgetState();
 }
 
-class _TabWidgetState extends State<TabWidget>
-    with SingleTickerProviderStateMixin {
+class _TabWidgetState extends State<TabWidget> with TickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -44,6 +43,7 @@ class _TabWidgetState extends State<TabWidget>
     super.didUpdateWidget(oldWidget);
 
     if (widget.tabs.length != oldWidget.tabs.length) {
+      _tabController.removeListener(_handleTabSelection);
       _tabController.dispose();
       _tabController = TabController(length: widget.tabs.length, vsync: this);
       _tabController.addListener(_handleTabSelection);
@@ -59,28 +59,46 @@ class _TabWidgetState extends State<TabWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          color: Theme.of(context).colorScheme.surface,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Theme.of(
-              context,
-            ).colorScheme.onSurface.withAlpha(153),
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            tabs: widget.tabs.map((tab) => Tab(text: tab.title)).toList(),
-          ),
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: widget.tabs.map((tab) => tab.content).toList(),
-          ),
-        ),
-      ],
+    return DefaultTabController(
+      length: widget.tabs.length,
+      child: Builder(
+        builder: (BuildContext context) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                color: Theme.of(context).colorScheme.surface,
+                child: Material(
+                  color: Colors.transparent,
+
+                  child: Builder(
+                    builder: (BuildContext materialContext) {
+                      return TabBar(
+                        controller: _tabController,
+                        labelColor: Theme.of(context).colorScheme.primary,
+                        unselectedLabelColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(153),
+                        indicatorColor: Theme.of(context).colorScheme.primary,
+                        tabs:
+                            widget.tabs
+                                .map((tab) => Tab(text: tab.title))
+                                .toList(),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: widget.tabs.map((tab) => tab.content).toList(),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

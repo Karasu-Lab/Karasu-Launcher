@@ -1,0 +1,337 @@
+{
+    "homePage": {
+        "tabs": {
+            "play": "游戏",
+            "launchConfig": "启动配置",
+            "patchNotes": "官方补丁说明",
+            "log": "日志"
+        },
+        "button": {
+            "launch": "启动 {name}",
+            "selectProfile": "请选择配置文件",
+            "launchInDifferentInstance": "在不同实例中启动"
+        },
+        "warning": {
+            "title": "警告",
+            "duplicateInstance": "具有相同配置文件的Minecraft实例已在运行。\n运行同一配置文件的多个实例可能会导致问题。\n\n是否继续？",
+            "duplicateProfile": "此配置文件已在运行。\n运行同一配置文件的多个实例可能会导致数据损坏和其他问题。\n\n是否继续？"
+        },
+        "actions": {
+            "cancel": "取消",
+            "launch": "启动"
+        },
+        "error": {
+            "profileNotFound": "未找到所选配置文件"
+        }
+    },
+    "loadingPage": {
+        "initializing": "正在初始化...",
+        "checkingConnection": "正在检查互联网连接...",
+        "noConnection": "没有互联网连接",
+        "connectionError": "检查连接时出错",
+        "loadingProfiles": "正在加载配置信息...",
+        "checkingAuth": "正在检查认证状态...",
+        "offlineMode": "没有互联网连接。正在以离线模式继续...",
+        "loggedInAs": "已作为{name}登录。",
+        "applyingSettings": "正在应用设置...",
+        "errorOccurred": "发生错误",
+        "initFailed": "应用程序初始化失败",
+        "initError": "初始化错误",
+        "fetchingProfiles": "正在获取配置信息..."
+    },
+    "serverPage": {
+        "title": "Minecraft 服务器管理",
+        "startServer": "启动服务器",
+        "serverSettings": "服务器设置"
+    },
+    "gameContent": {
+        "tabContent": "游戏标签内容"
+    },
+    "launchConfigTab": {
+        "manageProfiles": "管理配置文件",
+        "customProfile": "自定义配置文件",
+        "noCustomProfiles": "没有自定义配置文件",
+        "deleteProfile": "删除配置文件",
+        "deleteConfirmation": "您确定要删除此配置文件吗？",
+        "cancel": "取消",
+        "delete": "删除"
+    },
+    "logTab": {
+        "type": "类型",
+        "info": "信息",
+        "assetFetch": "资源获取",
+        "libraryFetch": "库获取",
+        "error": "错误",
+        "source": "来源",
+        "javaStdOut": "Java 标准输出",
+        "javaStdErr": "Java 错误输出",
+        "autoScroll": "自动滚动",
+        "clear": "清除",
+        "noLogs": "没有可用的日志",
+        "sampleLogMessage": "示例日志消息"
+    },
+    "patchNotesTab": {
+        "fetchError": "获取补丁说明失败",
+        "retry": "重试",
+        "noPatchNotes": "没有可用的补丁说明"
+    },
+    "profileDialog": {
+        "editProfile": "编辑此配置文件",
+        "createProfile": "创建新配置文件",
+        "profileName": "配置文件名称",
+        "profileNameHint": "我的酷炫配置文件",
+        "gameDirectory": "游戏目录（可选）",
+        "gameDirectoryHint": "如果此条目为空，将使用默认值。",
+        "javaArguments": "Java参数（可选）",
+        "javaArgumentsHint": "-Xmx2G -XX:+UnlockExperimentalVMOptions",
+        "selectFolder": "选择文件夹",
+        "cancel": "取消",
+        "save": "保存",
+        "requiredFields": "配置文件名称和版本是必填项",
+        "version": "版本",
+        "showReleases": "显示正式版",
+        "showSnapshots": "显示快照版",
+        "showOldVersions": "显示旧版本",
+        "latestRelease": "最新正式版",
+        "latestSnapshot": "最新快照版",
+        "noVersionsAvailable": "没有可用的版本",
+        "loadingVersions": "正在加载版本...",
+        "failedToLoadVersions": "加载版本失败",
+        "selected": "已选择",
+        "none": "无"
+    },
+    "profileCard": {
+        "version": "版本: {version}",
+        "unknownVersion": "未知",
+        "lastPlayed": "最后游玩: {date}",
+        "unknown": "未知",
+        "editTooltip": "编辑此配置文件",
+        "cannotEditTooltip": "您无法编辑此配置文件",
+        "deleteTooltip": "删除此配置文件",
+        "cannotDeleteTooltip": "您无法删除此配置文件"
+    },
+    "profileFilter": {
+        "showReleases": "显示发行版",
+        "showSnapshots": "显示快照版",
+        "showOldVersions": "显示旧版本"
+    },
+    "profileSortSelector": {
+        "customOrder": "自定义顺序",
+        "lastPlayedOrder": "最后游玩顺序",
+        "creationOrder": "创建顺序"
+    },
+    "playTab": {
+        "game": "游戏",
+        "screenshots": "截图"
+    },
+    "screenshotsContent": {
+        "noScreenshots": "没有截图文件。",
+        "profileFilter": "配置文件筛选",
+        "clearAll": "全部清除",
+        "refresh": "刷新",
+        "selectProfile": "请选择配置文件",
+        "screenshotCount": "{count}张",
+        "defaultProfileName": "默认（最新版本）",
+        "defaultReleaseProfileName": "默认（最新正式版）",
+        "defaultSnapshotProfileName": "默认（最新快照版）",
+        "noScreenshotsForProfile": "所选配置文件没有截图。",
+        "year": "年",
+        "month": "月",
+        "day": "日"
+    },
+    "taskManagerPage": {
+        "title": "任务管理器",
+        "noAccounts": "未注册账户",
+        "offlineUser": "离线用户",
+        "unknownUser": "未知用户",
+        "userId": "用户ID: {id}",
+        "xuid": "XUID: {id}",
+        "xuidHidden": "XUID: ••••••••••••••••"
+    },
+    "accountHome": {
+        "title": "账户管理",
+        "addAccount": "添加新账户",
+        "minecraftAccounts": "Minecraft账户",
+        "onlineMode": "在线模式",
+        "offlineMode": "离线模式",
+        "noAccounts": "没有账户",
+        "activeAccount": "活跃账户",
+        "authenticated": "已认证",
+        "tokenExpired": "令牌已过期",
+        "tokenRefreshing": "正在刷新令牌...",
+        "refreshToken": "刷新令牌",
+        "profileDetails": "个人资料详情",
+        "toggleToOnline": "返回在线模式",
+        "toggleToOffline": "切换到离线模式",
+        "demoMode": "在演示模式下启动Minecraft"
+    },
+    "accountProfile": {
+        "title": "账户档案",
+        "accountNotFound": "未找到账户信息",
+        "usernameUnknown": "用户名未知",
+        "accountInfo": "账户信息",
+        "minecraftId": "Minecraft ID",
+        "minecraftJavaEdition": "Minecraft Java版",
+        "hasOwnership": "拥有所有权",
+        "noOwnership": "无所有权",
+        "tokenInfo": "令牌信息",
+        "valid": "有效",
+        "invalid": "无效",
+        "signOut": "退出登录",
+        "thisAccount": "此账户"
+    },
+    "accountSignIn": {
+        "title": "登录",
+        "microsoftSignIn": "使用Microsoft账户登录",
+        "enterCode": "在验证页面输入以下代码：",
+        "copyCode": "复制代码",
+        "openAuthPage": "打开验证页面",
+        "authenticating": "等待认证...请在浏览器中完成认证",
+        "useAccount": "使用您的Microsoft账户登录。",
+        "startSignIn": "开始登录",
+        "codeCopied": "代码已复制到剪贴板",
+        "authFailed": "认证失败: {error}",
+        "startAuthFailed": "启动认证失败: {error}",
+        "copyError": "复制错误信息",
+        "errorCopied": "错误信息已复制"
+    },
+    "accountSignOut": {
+        "title": "退出登录确认",
+        "confirmationMessage": "您确定要退出{accountName}的登录吗？",
+        "cancel": "取消",
+        "signOut": "退出登录"
+    },
+    "xboxAccount": {
+        "unknown": "未知用户",
+        "authenticated": "已认证",
+        "tokenRefreshRequired": "令牌需要更新",
+        "uuid": "UUID: {id}",
+        "refreshToken": "更新令牌",
+        "signOut": "退出登录",
+        "addNewAccount": "添加新账户",
+        "close": "关闭",
+        "title": "Xbox账户"
+    },
+    "profileList": {
+        "noMatchingProfiles": "没有与筛选条件匹配的配置文件",
+        "sortOptions": {
+            "byName": "按名称",
+            "byLastPlayed": "按最后游玩时间",
+            "byCreation": "按创建时间"
+        }
+    },
+    "confirmationDialog": {
+        "defaultCancel": "取消",
+        "defaultConfirm": "确认"
+    },
+    "errorDialog": {
+        "defaultTitle": "错误",
+        "defaultButtonText": "关闭"
+    },
+    "featureInDevelopmentDialog": {
+        "defaultTitle": "功能开发中",
+        "defaultMessage": "分享功能正在开发中。",
+        "defaultButtonText": "关闭"
+    },
+    "screenshotCommentDialog": {
+        "title": "编辑评论",
+        "hintText": "为此截图添加评论",
+        "cancel": "取消",
+        "save": "保存",
+        "error": {
+            "title": "错误",
+            "saveFailed": "保存评论时发生错误: {error}",
+            "close": "关闭"
+        }
+    },
+    "screenshotDetailScreen": {
+        "copyToClipboard": "复制到剪贴板",
+        "copied": "图像已复制到剪贴板",
+        "copyFailed": "复制到剪贴板失败: {error}",
+        "share": "分享",
+        "delete": "删除",
+        "comment": "评论",
+        "editComment": "编辑评论",
+        "deleteComment": "删除评论",
+        "noComment": "没有评论。点击编辑。",
+        "tapToEdit": "点击编辑评论",
+        "deleteConfirm": {
+            "title": "确认删除",
+            "message": "您确定要删除此截图吗？",
+            "cancel": "取消",
+            "confirm": "删除"
+        },
+        "error": {
+            "deleteFailed": "删除文件时发生错误: {error}"
+        }
+    },
+    "screenshotRegisterDialog": {
+        "title": "添加评论",
+        "message": "此截图尚未注册到收藏中。添加评论将自动将其注册到收藏中。",
+        "cancel": "取消",
+        "continue": "继续"
+    },
+    "sideMenu": {
+        "taskManager": "任务管理器",
+        "accounts": "账户",
+        "settings": "设置",
+        "openMenu": "打开菜单",
+        "closeMenu": "关闭菜单"
+    },
+    "settingsPage": {
+        "title": "设置",
+        "general": "一般",
+        "language": "语言设置",
+        "dataManagement": "数据管理",
+        "others": "其他",
+        "appDirectory": {
+            "title": "应用程序数据目录",
+            "copied": "路径已复制到剪贴板",
+            "copyTooltip": "复制路径"
+        },
+        "restartApp": {
+            "title": "重新启动应用程序",
+            "subtitle": "重新启动应用程序以应用更改",
+            "message": "应用程序将重新启动以应用更改。您确定要继续吗？",
+            "success": "应用程序已重新启动",
+            "error": "发生错误：{error}"
+        },
+        "clearAccount": {
+            "title": "清除账户信息",
+            "subtitle": "删除所有已保存的账户信息",
+            "confirmTitle": "清除账户信息",
+            "confirmMessage": "所有账户信息将被删除。此操作无法撤消。是否继续？",
+            "success": "账户信息已清除",
+            "error": "发生错误：{error}"
+        },
+        "clearCache": {
+            "title": "清除缓存",
+            "subtitle": "删除临时缓存数据",
+            "confirmTitle": "清除缓存",
+            "confirmMessage": "缓存数据将被删除。如果应用运行缓慢，请执行此操作。",
+            "success": "缓存已清除",
+            "error": "发生错误：{error}"
+        },
+        "clearAllData": {
+            "title": "清除所有数据",
+            "subtitle": "删除所有应用数据并重置为初始状态",
+            "confirmTitle": "清除所有数据",
+            "confirmMessage": "所有应用数据将被删除并重置为初始状态。（世界文件夹和截图将保留。）此操作无法撤消。您确定要继续吗？",
+            "success": "所有数据已清除",
+            "error": "发生错误：{error}",
+            "reloadMessage": "由于文件已被删除，应用程序将自动重新启动。"
+        },
+        "buttons": {
+            "cancel": "取消",
+            "delete": "删除"
+        },
+        "languageConfirm": {
+            "title": "更改语言",
+            "message": "更改语言将导致应用重新加载。您确定要继续吗？",
+            "confirmButton": "确定"
+        },
+        "errors": {
+            "filesInUse": "某些文件（{count}个）无法删除，因为它们正在使用中。尝试关闭其他应用程序，然后重试。"
+        }
+    }
+}

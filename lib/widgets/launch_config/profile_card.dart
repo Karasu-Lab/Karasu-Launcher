@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 class ProfileCard extends StatelessWidget {
   final String profileId;
@@ -73,12 +74,29 @@ class ProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'バージョン: ${profile.lastVersionId ?? "不明"}',
+                      FlutterI18n.translate(
+                        context,
+                        'profileCard.version',
+                        translationParams: {
+                          'version':
+                              profile.lastVersionId ??
+                              FlutterI18n.translate(
+                                context,
+                                'profileCard.unknownVersion',
+                              ),
+                        },
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '最終プレイ: ${_formatDate(profile.lastUsed ?? "")}',
+                      FlutterI18n.translate(
+                        context,
+                        'profileCard.lastPlayed',
+                        translationParams: {
+                          'date': _formatDate(context, profile.lastUsed ?? ""),
+                        },
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -91,14 +109,30 @@ class ProfileCard extends StatelessWidget {
                     icon: const Icon(Icons.edit),
                     onPressed: isDefaultProfile ? null : onEdit,
                     tooltip:
-                        isDefaultProfile ? 'You cannot edit this profile' : 'Edit this profile',
+                        isDefaultProfile
+                            ? FlutterI18n.translate(
+                              context,
+                              'profileCard.cannotEditTooltip',
+                            )
+                            : FlutterI18n.translate(
+                              context,
+                              'profileCard.editTooltip',
+                            ),
                     color: isDefaultProfile ? Colors.grey : null,
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: isDefaultProfile ? null : onDelete,
                     tooltip:
-                        isDefaultProfile ? 'You cannot delete this profile' : 'Delete this profile',
+                        isDefaultProfile
+                            ? FlutterI18n.translate(
+                              context,
+                              'profileCard.cannotDeleteTooltip',
+                            )
+                            : FlutterI18n.translate(
+                              context,
+                              'profileCard.deleteTooltip',
+                            ),
                     color: isDefaultProfile ? Colors.grey : Colors.red,
                   ),
                 ],
@@ -110,12 +144,12 @@ class ProfileCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(String isoDate) {
+  String _formatDate(BuildContext context, String isoDate) {
     try {
       final date = DateTime.parse(isoDate);
       return '${date.year}/${date.month}/${date.day}';
     } catch (_) {
-      return 'Unknown';
+      return FlutterI18n.translate(context, 'profileCard.unknown');
     }
   }
 }

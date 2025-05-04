@@ -4,13 +4,17 @@ import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/router/routes.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_i18n/loaders/decoders/json_decode_strategy.dart';
+import 'package:karasu_launcher/providers/locale_provider.dart';
 
 const methodChannel = MethodChannel('com.karasu256.karasu_launcher/window');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  runApp(ProviderScope(child: const MyApp()));
+  runApp(ProviderScope(child: MyApp()));
 
   doWhenWindowReady(() {
     final win = appWindow;
@@ -26,12 +30,19 @@ Future<void> main() async {
   });
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  Widget build(BuildContext context) {
     final appRouter = ref.watch(routerProvider);
+    final currentLocale = ref.watch(localeProvider);
+    
     return MaterialApp.router(
       title: 'Karasu Launcher',
       theme: ThemeData(
@@ -42,6 +53,23 @@ class MyApp extends ConsumerWidget {
       ),
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
+      locale: currentLocale,
+      localizationsDelegates: [
+        FlutterI18nDelegate(
+          translationLoader: FileTranslationLoader(
+            decodeStrategies: [JsonDecodeStrategy()],
+            fallbackFile: 'en',
+            basePath: 'assets/flutter_i18n',
+          ),
+          missingTranslationHandler: (key, locale) {
+            debugPrint("Missing key: $key, locale: $locale");
+          },
+        ),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: supportedLocales,
     );
   }
 }

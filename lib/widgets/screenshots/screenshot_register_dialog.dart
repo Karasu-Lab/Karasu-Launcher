@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
-/// スクリーンショットがコレクションに登録されていない場合のダイアログ
 class ScreenshotRegisterDialog extends StatelessWidget {
   const ScreenshotRegisterDialog({super.key});
 
-  /// ダイアログを表示するための静的メソッド
   static Future<bool> show(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
@@ -16,19 +15,24 @@ class ScreenshotRegisterDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('コメントの追加'),
-      content: const Text(
-        'このスクリーンショットはまだコレクションに登録されていません。'
-        'コメントを追加すると自動的にコレクションに登録されます。',
+      title: Text(
+        FlutterI18n.translate(context, "screenshotRegisterDialog.title"),
+      ),
+      content: Text(
+        FlutterI18n.translate(context, "screenshotRegisterDialog.message"),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('キャンセル'),
+          child: Text(
+            FlutterI18n.translate(context, "screenshotRegisterDialog.cancel"),
+          ),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('続ける'),
+          child: Text(
+            FlutterI18n.translate(context, "screenshotRegisterDialog.continue"),
+          ),
         ),
       ],
     );

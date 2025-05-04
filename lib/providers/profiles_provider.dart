@@ -17,7 +17,6 @@ final profilesProvider =
 
 final selectedProfileProvider = StateProvider<String?>((ref) => null);
 
-// プロファイル読み込み完了を管理するプロバイダー
 final profilesInitializedProvider = FutureProvider<LauncherProfiles?>((
   ref,
 ) async {
@@ -25,18 +24,15 @@ final profilesInitializedProvider = FutureProvider<LauncherProfiles?>((
   return await profilesNotifier.initialized;
 });
 
-// プロファイル読み込み状態を追跡するプロバイダー
 final profilesLoadingProvider = Provider<bool>((ref) {
   final asyncValue = ref.watch(profilesInitializedProvider);
   return asyncValue.isLoading;
 });
 
-// バージョン情報を取得するプロバイダー
 final versionsProvider = FutureProvider<LauncherVersionsV2?>((ref) async {
   return await fetchVersionManifest();
 });
 
-// バージョンリストを取得するプロバイダー
 final availableVersionsProvider = FutureProvider<List<MinecraftVersion>>((
   ref,
 ) async {
@@ -47,7 +43,6 @@ final availableVersionsProvider = FutureProvider<List<MinecraftVersion>>((
   return versionsData.versions;
 });
 
-// リリースバージョンのみを取得するプロバイダー
 final releaseVersionsProvider = FutureProvider<List<MinecraftVersion>>((
   ref,
 ) async {
@@ -55,7 +50,6 @@ final releaseVersionsProvider = FutureProvider<List<MinecraftVersion>>((
   return versions.where((version) => version.type == 'release').toList();
 });
 
-// スナップショットバージョンのみを取得するプロバイダー
 final snapshotVersionsProvider = FutureProvider<List<MinecraftVersion>>((
   ref,
 ) async {
@@ -63,7 +57,6 @@ final snapshotVersionsProvider = FutureProvider<List<MinecraftVersion>>((
   return versions.where((version) => version.type == 'snapshot').toList();
 });
 
-// 最新バージョン情報を取得するプロバイダー
 final latestVersionsProvider = FutureProvider<Map<String, String>>((ref) async {
   final versionsData = await ref.watch(versionsProvider.future);
   if (versionsData == null) {
@@ -87,52 +80,42 @@ Future<LauncherVersionsV2?> fetchVersionManifest() async {
       final Map<String, dynamic> data = jsonDecode(response.body);
       return LauncherVersionsV2.fromJson(data);
     } else {
-      debugPrint('バージョン情報の取得に失敗しました: ${response.statusCode}');
+      debugPrint('Failed to fetch version information: ${response.statusCode}');
       return null;
     }
   } catch (e) {
-    debugPrint('バージョンマニフェスト取得エラー: $e');
+    debugPrint('Error fetching version manifest: $e');
     return null;
   }
 }
 
 class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
-  // コンストラクタでは初期化処理を行わないように変更
   ProfilesNotifier() : super(null);
 
-  // プロファイル読み込み中フラグ
   bool _isLoading = false;
-  // 初期化完了フラグ
   bool _isInitialized = false;
-  // プロファイル読み込みの完了を待つためのCompleter
   Completer<LauncherProfiles?>? _initCompleter;
 
-  // プロファイルが初期化されているかどうかを返す
   bool get isInitialized => _isInitialized;
 
-  // プロファイルの読み込みが完了するまで待つFutureを返す
   Future<LauncherProfiles?> get initialized async {
     if (_isInitialized) {
       return state;
     }
 
     if (_isLoading) {
-      // 既に読み込み中の場合は、そのCompleterの完了を待つ
       return await _initCompleter!.future;
     }
 
-    // 初めて呼び出された場合は、読み込みを開始
     return await loadProfiles();
   }
 
-  // プロファイルを読み込む
   Future<LauncherProfiles?> loadProfiles() async {
     if (_isInitialized) {
       return state;
     }
 
     if (_isLoading) {
-      // 既に読み込み中の場合は、そのCompleterの完了を待つ
       return await _initCompleter!.future;
     }
 
@@ -144,7 +127,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
       _isInitialized = true;
       _initCompleter!.complete(state);
     } catch (e) {
-      debugPrint('プロファイルのロードに失敗しました: $e');
+      debugPrint('Failed to load profiles: $e');
       _initCompleter!.completeError(e);
     } finally {
       _isLoading = false;
@@ -170,14 +153,13 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
 
       state = LauncherProfiles.fromJson(json);
 
-      // nullのidを持つプロファイルにUUIDを割り当てる
       bool hasNullIds = false;
       final updatedProfiles = Map<String, Profile>.from(state!.profiles);
 
       updatedProfiles.forEach((profileId, profile) {
         if (profile.id == null) {
           updatedProfiles[profileId] = Profile(
-            id: const Uuid().v4(), // 新しいUUIDを割り当て
+            id: const Uuid().v4(),
             name: profile.name,
             type: profile.type,
             created: profile.created,
@@ -194,9 +176,8 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
         }
       });
 
-      // nullのidがあった場合、更新した状態を保存
       if (hasNullIds) {
-        debugPrint('nullのidを持つプロファイルにUUIDを割り当てました');
+        debugPrint('Assigned UUIDs to profiles with null ids');
         state = LauncherProfiles(
           profiles: updatedProfiles,
           settings: state!.settings,
@@ -207,7 +188,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
 
       await _ensureDefaultProfiles(versionsData);
     } catch (e) {
-      debugPrint('プロファイルのロードに失敗しました: $e');
+      debugPrint('Failed to load profiles: $e');
       await _createDefaultProfiles(null);
     }
   }
@@ -221,7 +202,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
         versionsData?.latest.snapshot ?? 'latest-snapshot';
 
     final defaultReleaseProfile = Profile(
-      id: const Uuid().v4(), // UUIDを生成
+      id: const Uuid().v4(),
       name: 'Latest Release',
       type: 'latest-release',
       created: DateTime.now().toIso8601String(),
@@ -230,7 +211,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
     );
 
     final defaultSnapshotProfile = Profile(
-      id: const Uuid().v4(), // UUIDを生成
+      id: const Uuid().v4(),
       name: 'Latest Snapshot',
       type: 'latest-snapshot',
       created: DateTime.now().toIso8601String(),
@@ -271,12 +252,10 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
     bool needsUpdate = false;
     final updatedProfiles = Map<String, Profile>.from(state!.profiles);
 
-    // 最新リリースプロファイルの確認と更新
     final latestReleaseProfile = updatedProfiles['latest_release'];
     if (latestReleaseProfile == null) {
-      // 存在しない場合は作成
       updatedProfiles['latest_release'] = Profile(
-        id: const Uuid().v4(), // UUIDを生成
+        id: const Uuid().v4(),
         name: 'Latest Release',
         type: 'latest-release',
         created: DateTime.now().toIso8601String(),
@@ -286,9 +265,8 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
       needsUpdate = true;
     } else if (latestReleaseProfile.lastVersionId !=
         versionsData.latest.release) {
-      // バージョンが古い場合は更新
       updatedProfiles['latest_release'] = Profile(
-        id: latestReleaseProfile.id, // 既存のIDを保持
+        id: latestReleaseProfile.id,
         name: latestReleaseProfile.name,
         type: latestReleaseProfile.type,
         created: latestReleaseProfile.created,
@@ -304,12 +282,10 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
       needsUpdate = true;
     }
 
-    // 最新スナップショットプロファイルの確認と更新
     final latestSnapshotProfile = updatedProfiles['latest_snapshot'];
     if (latestSnapshotProfile == null) {
-      // 存在しない場合は作成
       updatedProfiles['latest_snapshot'] = Profile(
-        id: const Uuid().v4(), // UUIDを生成
+        id: const Uuid().v4(),
         name: 'Latest Snapshot',
         type: 'latest-snapshot',
         created: DateTime.now().toIso8601String(),
@@ -319,9 +295,8 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
       needsUpdate = true;
     } else if (latestSnapshotProfile.lastVersionId !=
         versionsData.latest.snapshot) {
-      // バージョンが古い場合は更新
       updatedProfiles['latest_snapshot'] = Profile(
-        id: latestSnapshotProfile.id, // 既存のIDを保持
+        id: latestSnapshotProfile.id,
         name: latestSnapshotProfile.name,
         type: latestSnapshotProfile.type,
         created: latestSnapshotProfile.created,
@@ -359,7 +334,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
 
       await file.writeAsString(jsonString);
     } catch (e) {
-      debugPrint('プロファイルの保存に失敗しました: $e');
+      debugPrint('Failed to save profiles: $e');
     }
   }
 
@@ -369,11 +344,10 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
 
     final updatedProfiles = Map<String, Profile>.from(state!.profiles);
 
-    // プロファイルにIDが設定されていない場合、UUIDを生成
     final profileWithId =
         profile.id == null
             ? Profile(
-              id: const Uuid().v4(), // UUIDを生成
+              id: const Uuid().v4(),
               name: profile.name,
               type: profile.type,
               created: profile.created,
@@ -401,14 +375,13 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
   Future<void> removeProfile(String id) async {
     if (state == null) return;
 
-    // デフォルトプロファイルは削除できないようにする
     if (id == 'latest_release' || id == 'latest_snapshot') {
-      debugPrint('デフォルトプロファイルは削除できません');
+      debugPrint('Default profiles cannot be deleted');
       return;
     }
 
     if (state!.profiles.length <= 2) {
-      debugPrint('少なくとも2つのデフォルトプロファイルは必要です');
+      debugPrint('At least two default profiles are required');
       return;
     }
 
@@ -424,7 +397,6 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
     await _saveProfiles();
   }
 
-  // プロファイルのソート設定を保存
   Future<void> updateProfileSorting(String sortingType) async {
     if (state == null) return;
 
@@ -435,7 +407,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
       enableReleases: state!.settings.enableReleases,
       enableSnapshots: state!.settings.enableSnapshots,
       keepLauncherOpen: state!.settings.keepLauncherOpen,
-      profileSorting: sortingType, // ソート設定を更新
+      profileSorting: sortingType,
       showGameLog: state!.settings.showGameLog,
       showMenu: state!.settings.showMenu,
       soundOn: state!.settings.soundOn,
@@ -450,20 +422,17 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
     await _saveProfiles();
   }
 
-  // カスタムプロファイル並び順を保存
   Future<void> saveProfileOrder(List<String> orderedProfileIds) async {
     if (state == null) return;
 
-    // 各プロファイルにorderプロパティを追加して保存
     final updatedProfiles = Map<String, Profile>.from(state!.profiles);
 
     for (int i = 0; i < orderedProfileIds.length; i++) {
       final profileId = orderedProfileIds[i];
       if (updatedProfiles.containsKey(profileId)) {
         final profile = updatedProfiles[profileId]!;
-        // 現在のプロファイルの値を保持したまま、order属性のみ更新
         updatedProfiles[profileId] = Profile(
-          id: profile.id, // 既存のIDを保持
+          id: profile.id,
           name: profile.name,
           type: profile.type,
           created: profile.created,
@@ -474,7 +443,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
           javaDir: profile.javaDir,
           icon: profile.icon,
           skipJreVersionCheck: profile.skipJreVersionCheck,
-          order: i, // 並び順を設定
+          order: i,
         );
       }
     }
@@ -506,7 +475,7 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
     final profile = state!.profiles[id]!;
 
     final updatedProfile = Profile(
-      id: profile.id, // IDを保持
+      id: profile.id,
       name: profile.name,
       type: profile.type,
       created: profile.created,
@@ -524,11 +493,9 @@ class ProfilesNotifier extends StateNotifier<LauncherProfiles?> {
   }
 
   Future<LauncherProfiles?> reloadProfiles() async {
-    debugPrint('プロファイルの再読み込みを開始します');
-    // 初期化状態をリセット
+    debugPrint('Starting profile reload');
     _isInitialized = false;
     _isLoading = false;
-    // 再度読み込み処理を呼び出す
     return await loadProfiles();
   }
 }

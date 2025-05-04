@@ -1,44 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 機能開発中ダイアログ
-class FeatureInDevelopmentDialog extends StatelessWidget {
-  final String title;
-  final String message;
-  final String buttonText;
+class FeatureInDevelopmentDialog extends ConsumerStatefulWidget {
+  final String? title;
+  final String? message;
+  final String? buttonText;
 
   const FeatureInDevelopmentDialog({
     super.key,
-    this.title = '機能開発中',
-    this.message = '共有機能は開発中です。',
-    this.buttonText = '閉じる',
+    this.title,
+    this.message,
+    this.buttonText,
   });
 
-  /// ダイアログを表示するための静的メソッド
   static Future<void> show(
     BuildContext context, {
-    String title = '機能開発中',
-    String message = '共有機能は開発中です。',
-    String buttonText = '閉じる',
+    String? title,
+    String? message,
+    String? buttonText,
   }) async {
     return showDialog(
       context: context,
-      builder: (context) => FeatureInDevelopmentDialog(
-        title: title,
-        message: message,
-        buttonText: buttonText,
-      ),
+      builder:
+          (context) => FeatureInDevelopmentDialog(
+            title: title,
+            message: message,
+            buttonText: buttonText,
+          ),
     );
+  }
+
+  @override
+  ConsumerState<FeatureInDevelopmentDialog> createState() =>
+      _FeatureInDevelopmentDialogState();
+}
+
+class _FeatureInDevelopmentDialogState
+    extends ConsumerState<FeatureInDevelopmentDialog> {
+  late String localizedTitle;
+  late String localizedMessage;
+  late String localizedButtonText;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initLocalizedTexts();
+    });
+  }
+
+  void _initLocalizedTexts() {
+    localizedTitle =
+        widget.title ??
+        FlutterI18n.translate(
+          context,
+          "featureInDevelopmentDialog.defaultTitle",
+        );
+    localizedMessage =
+        widget.message ??
+        FlutterI18n.translate(
+          context,
+          "featureInDevelopmentDialog.defaultMessage",
+        );
+    localizedButtonText =
+        widget.buttonText ??
+        FlutterI18n.translate(
+          context,
+          "featureInDevelopmentDialog.defaultButtonText",
+        );
+
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(title),
-      content: Text(message),
+      title: Text(localizedTitle),
+      content: Text(localizedMessage),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(buttonText),
+          child: Text(localizedButtonText),
         ),
       ],
     );

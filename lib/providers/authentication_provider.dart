@@ -85,7 +85,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       final account = state.accounts[activeMicrosoftAccountId];
       if (account != null && account.hasRefreshToken) {
         debugPrint(
-          'アクティブなMicrosoftアカウントIDからリフレッシュトークンを復元: $activeMicrosoftAccountId',
+          'Restoring refresh token from active Microsoft account ID: $activeMicrosoftAccountId',
         );
         try {
           if (state.activeAccount == null) {
@@ -95,7 +95,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
             );
           }
         } catch (e) {
-          debugPrint('リフレッシュトークンを使用したサインイン中にエラー: $e');
+          debugPrint('Error signing in with refresh token: $e');
         }
       }
     }
@@ -129,7 +129,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         activeMicrosoftAccountId: activeMicrosoftAccountId,
       );
     } catch (e) {
-      debugPrint('アカウント読み込みエラー: $e');
+      debugPrint('Error loading accounts: $e');
       state = state.copyWith(accounts: {}, activeMicrosoftAccountId: null);
     }
   }
@@ -144,7 +144,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       final accountsJson = jsonEncode(accountsMap);
       await prefs.setString(_accountsKey, accountsJson);
     } catch (e) {
-      debugPrint('アカウント保存エラー: $e');
+      debugPrint('Error saving accounts: $e');
     }
   }
 
@@ -157,7 +157,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         await prefs.remove(_activeAccountKey);
       }
     } catch (e) {
-      debugPrint('アクティブアカウントID保存エラー: $e');
+      debugPrint('Error saving active account ID: $e');
     }
   }
 
@@ -166,7 +166,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_activeAccountKey);
     } catch (e) {
-      debugPrint('アクティブアカウントID取得エラー: $e');
+      debugPrint('Error retrieving active account ID: $e');
     }
     return null;
   }
@@ -225,7 +225,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       bool isTokenValid = account?.hasValidMinecraftToken ?? false;
 
       if (!isTokenValid && account?.hasRefreshToken == true) {
-        debugPrint('新しくアクティブになったアカウントのトークンを更新します');
+        debugPrint('Updating tokens for newly active account');
         final profile = await refreshActiveAccount();
         isTokenValid = profile != null;
       }
@@ -248,28 +248,28 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       );
     }
 
-    debugPrint('アクティブアカウントがクリアされました（オフラインモード）');
+    debugPrint('Active account has been cleared (offline mode)');
   }
 
   Future<Account?> restoreLastActiveAccount() async {
     if (state.accounts.isEmpty) {
-      debugPrint('復元するアカウントがありません');
+      debugPrint('No accounts to restore');
       return null;
     }
 
     final lastUsedAccountId = await _getActiveAccountId();
 
     final accountId = lastUsedAccountId ?? state.accounts.keys.first;
-    debugPrint('アカウント復元: $accountId');
+    debugPrint('Restoring account: $accountId');
 
     final isValid = await setActiveAccount(accountId);
     if (isValid) {
       debugPrint(
-        '有効なトークンでアカウントを復元しました: ${state.activeAccount?.profile?.name ?? "Unknown"}',
+        'Restored account with valid token: ${state.activeAccount?.profile?.name ?? "Unknown"}',
       );
     } else {
       debugPrint(
-        'トークンが無効なアカウントを復元しました: ${state.activeAccount?.profile?.name ?? "Unknown"}',
+        'Restored account with invalid token: ${state.activeAccount?.profile?.name ?? "Unknown"}',
       );
     }
 
@@ -281,29 +281,29 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
     try {
       debugPrint(
-        'アクティブアカウントでログイン中: ${state.activeAccount?.profile?.name ?? "Unknown"}',
+        'Logging in with active account: ${state.activeAccount?.profile?.name ?? "Unknown"}',
       );
       final account = state.activeAccount!;
 
       if (account.hasValidMinecraftToken && account.hasValidXboxToken) {
-        debugPrint('有効なトークンがあります、そのまま使用します');
+        debugPrint('Valid tokens available, using existing tokens');
         return account;
       }
 
       if (account.hasRefreshToken) {
-        debugPrint('トークンを更新します');
+        debugPrint('Refreshing tokens');
         final profile = await refreshActiveAccount();
         if (profile != null) {
-          debugPrint('トークン更新成功: ${profile.name}');
+          debugPrint('Token refresh successful: ${profile.name}');
           return state.activeAccount;
         } else {
-          debugPrint('トークン更新失敗');
+          debugPrint('Token refresh failed');
         }
       }
 
       return null;
     } catch (e) {
-      debugPrint('アクティブアカウントでのログイン中にエラー: $e');
+      debugPrint('Error logging in with active account: $e');
       return null;
     }
   }
@@ -333,8 +333,8 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       final microsoftAccountId = xboxLiveResponse.displayClaims.xui[0].uhs;
 
       final xuid = xboxLiveResponse.displayClaims.xui[0].uhs;
-      debugPrint('MicrosoftアカウントID (UHS) を取得: $microsoftAccountId');
-      debugPrint('Xbox XUID を取得: $xuid');
+      debugPrint('Retrieved Microsoft account ID (UHS): $microsoftAccountId');
+      debugPrint('Retrieved Xbox XUID: $xuid');
 
       final minecraftData = await _getMinecraftData(
         xstsResponse.displayClaims.xui[0].uhs,
@@ -350,7 +350,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         xuid: xuid,
       );
     } catch (e) {
-      debugPrint('認証処理エラー: $e');
+      debugPrint('Authentication process error: $e');
       rethrow;
     }
   }
@@ -365,7 +365,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
     if (existingAccount != null) {
       debugPrint(
-        '既存の Microsoft アカウントを更新します: $microsoftAccountId (Minecraft ID: $minecraftId)',
+        'Updating existing Microsoft account: $microsoftAccountId (Minecraft ID: $minecraftId)',
       );
       return existingAccount.copyWith(
         profile: authData.minecraftData.profile,
@@ -379,7 +379,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       );
     } else {
       debugPrint(
-        '新しい Microsoft アカウントを追加します: $microsoftAccountId (Minecraft ID: $minecraftId)',
+        'Adding new Microsoft account: $microsoftAccountId (Minecraft ID: $minecraftId)',
       );
       return Account(
         id: microsoftAccountId,
@@ -418,7 +418,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
       return authData.minecraftData.profile;
     } catch (e) {
-      debugPrint('認証フロー完了エラー: $e');
+      debugPrint('Error completing authentication flow: $e');
       rethrow;
     }
   }
@@ -429,7 +429,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     MinecraftProfile? profile;
 
     try {
-      debugPrint('Minecraftアクセストークン取得中...');
+      debugPrint('Getting Minecraft access token...');
       final minecraftToken = await _authService.getMinecraftAccessToken(
         uhs,
         xstsToken,
@@ -439,28 +439,30 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       expiresAt = DateTime.now().add(
         Duration(seconds: minecraftToken.expiresIn),
       );
-      debugPrint('Minecraftアクセストークン取得成功');
+      debugPrint('Successfully obtained Minecraft access token');
 
       try {
-        debugPrint('Minecraft所有権チェック中...');
+        debugPrint('Checking Minecraft ownership...');
         final hasGame = await _authService.checkMinecraftOwnership(
           minecraftToken.accessToken,
         );
 
         if (hasGame) {
-          debugPrint('Minecraft所有権確認済み、プロファイル取得中...');
+          debugPrint('Minecraft ownership confirmed, getting profile...');
           profile = await _authService.getMinecraftProfile(
             minecraftToken.accessToken,
           );
-          debugPrint('Minecraftプロファイル取得成功: ${profile.name}');
+          debugPrint(
+            'Successfully retrieved Minecraft profile: ${profile.name}',
+          );
         } else {
-          debugPrint('Minecraft: Java Editionの所有権がありません');
+          debugPrint('No ownership of Minecraft: Java Edition');
         }
       } catch (e) {
-        debugPrint('Minecraft所有権/プロファイル取得エラー: $e');
+        debugPrint('Error getting Minecraft ownership/profile: $e');
       }
     } catch (e) {
-      debugPrint('Minecraftトークン取得エラー: $e');
+      debugPrint('Error getting Minecraft token: $e');
     }
 
     return _MinecraftData(
@@ -479,7 +481,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
     if (profile != null) {
       final minecraftId = profile.id;
-      debugPrint('Minecraft ID: $minecraftId の重複チェック');
+      debugPrint('Checking for duplicate Minecraft ID: $minecraftId');
 
       final duplicateAccountIds =
           updatedAccounts.entries
@@ -493,7 +495,9 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
       if (duplicateAccountIds.isNotEmpty) {
         for (final accountId in duplicateAccountIds) {
-          debugPrint('重複するMinecraft IDを持つアカウントを削除: $accountId');
+          debugPrint(
+            'Removing account with duplicate Minecraft ID: $accountId',
+          );
           updatedAccounts.remove(accountId);
         }
       }
@@ -514,7 +518,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     try {
       if (fromIndex < 0 || fromIndex >= state.accounts.length) {
         debugPrint(
-          'fromIndexが範囲外です: from=$fromIndex, length=${state.accounts.length}',
+          'fromIndex out of bounds: from=$fromIndex, length=${state.accounts.length}',
         );
         return false;
       }
@@ -522,10 +526,12 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       int adjustedToIndex = toIndex;
       if (adjustedToIndex < 0) {
         adjustedToIndex = 0;
-        debugPrint('toIndexが負の値のため0に調整しました');
+        debugPrint('Adjusted negative toIndex to 0');
       } else if (adjustedToIndex > state.accounts.length) {
         adjustedToIndex = state.accounts.length;
-        debugPrint('toIndexが範囲外のため、最後のアイテムの次(${state.accounts.length})に調整しました');
+        debugPrint(
+          'Adjusted toIndex to position after the last item (${state.accounts.length})',
+        );
       }
 
       if (fromIndex == adjustedToIndex) {
@@ -566,32 +572,38 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       final existingProfile = account.profile;
       final microsoftAccountId = state.activeMicrosoftAccountId!;
 
-      debugPrint('アカウント更新開始: ${existingProfile?.name ?? "Unknown"}');
+      debugPrint(
+        'Starting account refresh: ${existingProfile?.name ?? "Unknown"}',
+      );
 
       if (account.microsoftRefreshToken == null) {
-        debugPrint('リフレッシュトークンがありません');
+        debugPrint('No refresh token available');
         state = state.copyWith(isRefreshing: false);
         return existingProfile;
       }
 
-      debugPrint('認証プロセス開始...');
+      debugPrint('Starting authentication process...');
       final authData = await _processAuthentication(
         refreshToken: account.microsoftRefreshToken!,
       );
 
       if (authData.minecraftData.profile == null) {
-        debugPrint('警告: 認証プロセスでMinecraftプロファイルが取得できませんでした');
-        debugPrint('アクセストークン存在: ${authData.minecraftData.accessToken != null}');
-        debugPrint('既存プロファイル存在: ${existingProfile != null}');
+        debugPrint(
+          'Warning: No Minecraft profile obtained from authentication process',
+        );
+        debugPrint(
+          'Access token exists: ${authData.minecraftData.accessToken != null}',
+        );
+        debugPrint('Existing profile exists: ${existingProfile != null}');
 
         if (authData.minecraftData.accessToken != null) {
-          debugPrint('直接プロファイル取得を試みます...');
+          debugPrint('Attempting direct profile retrieval...');
           try {
             final profile = await _authService.getMinecraftProfile(
               authData.minecraftData.accessToken!,
             );
 
-            debugPrint('プロファイル直接取得成功: ${profile.name}');
+            debugPrint('Direct profile retrieval successful: ${profile.name}');
             final updatedAccount = account.copyWith(
               profile: profile,
               microsoftRefreshToken: authData.microsoftRefreshToken,
@@ -604,16 +616,20 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
             await _updateAccount(microsoftAccountId, updatedAccount);
             state = state.copyWith(isRefreshing: false);
-            debugPrint('アカウント更新成功 (直接プロファイル取得): ${profile.name}');
+            debugPrint(
+              'Account update successful (direct profile retrieval): ${profile.name}',
+            );
             return profile;
           } catch (e) {
-            debugPrint('直接プロファイル取得エラー: $e');
+            debugPrint('Error retrieving profile directly: $e');
           }
         }
       }
 
       final profileToUse = authData.minecraftData.profile ?? existingProfile;
-      debugPrint('アカウント情報更新中... 使用するプロファイル: ${profileToUse?.name ?? "不明"}');
+      debugPrint(
+        'Updating account information... Using profile: ${profileToUse?.name ?? "unknown"}',
+      );
       final updatedAccount = account.copyWith(
         profile: profileToUse,
         microsoftRefreshToken: authData.microsoftRefreshToken,
@@ -628,16 +644,20 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       state = state.copyWith(isRefreshing: false);
 
       if (authData.minecraftData.profile != null) {
-        debugPrint('アカウント更新成功: ${authData.minecraftData.profile!.name}');
+        debugPrint(
+          'Account update successful: ${authData.minecraftData.profile!.name}',
+        );
       } else if (profileToUse != null) {
-        debugPrint('アカウント更新完了 (既存プロファイル使用: ${profileToUse.name})');
+        debugPrint(
+          'Account update completed (using existing profile: ${profileToUse.name})',
+        );
       } else {
-        debugPrint('アカウント更新完了 (プロファイル情報なし)');
+        debugPrint('Account update completed (no profile information)');
       }
 
       return profileToUse;
     } catch (e) {
-      debugPrint('アカウント更新エラー: $e');
+      debugPrint('Error updating account: $e');
       state = state.copyWith(isRefreshing: false);
 
       return state.activeAccount?.profile;
@@ -662,7 +682,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         }
       }
     } catch (e) {
-      debugPrint('Minecraft トークン取得エラー: $e');
+      debugPrint('Error retrieving Minecraft token: $e');
     }
 
     return null;
@@ -686,7 +706,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
         }
       }
     } catch (e) {
-      debugPrint('Xbox トークン取得エラー: $e');
+      debugPrint('Error retrieving Xbox token: $e');
     }
 
     return null;
@@ -700,10 +720,10 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
   Future<void> logoutMicrosoftAccount(String microsoftAccountId) async {
     try {
-      debugPrint('このMicrosoftアカウントをサインアウトします: $microsoftAccountId');
+      debugPrint('Signing out Microsoft account: $microsoftAccountId');
 
       if (!state.accounts.containsKey(microsoftAccountId)) {
-        debugPrint('アカウントが見つかりません: $microsoftAccountId');
+        debugPrint('Account not found: $microsoftAccountId');
         return;
       }
 
@@ -717,10 +737,10 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       if (isActiveAccount) {
         if (updatedAccounts.isNotEmpty) {
           newActiveId = updatedAccounts.keys.first;
-          debugPrint('新しいアクティブアカウントに切り替え: $newActiveId');
+          debugPrint('Switching to new active account: $newActiveId');
         } else {
           newActiveId = null;
-          debugPrint('アカウントがないため、オフラインモードに切り替えます');
+          debugPrint('No accounts left, switching to offline mode');
         }
         await _saveActiveAccountId(newActiveId);
       }
@@ -732,9 +752,9 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       );
 
       await _saveAccounts();
-      debugPrint('ストレージ内のアカウントの削除が完了しました: $microsoftAccountId');
+      debugPrint('Account removal from storage completed: $microsoftAccountId');
     } catch (e) {
-      debugPrint('サインアウト中にエラーが発生しました: $e');
+      debugPrint('Error occurred during sign out: $e');
     }
   }
 
@@ -746,26 +766,26 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
 
       if (account.hasValidMinecraftToken) {
         debugPrint(
-          'アクティブなアカウントの有効なトークンを返します: ${account.profile?.name ?? "Unknown"}',
+          'Returning valid token from active account: ${account.profile?.name ?? "Unknown"}',
         );
         return account.minecraftAccessToken;
       }
 
       if (account.hasRefreshToken) {
-        debugPrint('トークンを更新します');
+        debugPrint('Refreshing token');
         await refreshActiveAccount();
 
         if (state.activeAccount?.hasValidMinecraftToken ?? false) {
           debugPrint(
-            '更新されたトークンを返します: ${state.activeAccount?.profile?.name ?? "Unknown"}',
+            'Returning refreshed token: ${state.activeAccount?.profile?.name ?? "Unknown"}',
           );
           return state.activeAccount?.minecraftAccessToken;
         }
 
-        debugPrint('トークン更新後も有効なトークンがありません');
+        debugPrint('No valid token after refresh');
       }
     } catch (e) {
-      debugPrint('アクセストークン取得エラー: $e');
+      debugPrint('Error retrieving access token: $e');
     }
 
     return null;
@@ -776,11 +796,13 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     String refreshToken,
   ) async {
     try {
-      debugPrint('MicrosoftアカウントID: $microsoftAccountId でサインイン中...');
+      debugPrint(
+        'Signing in with Microsoft account ID: $microsoftAccountId...',
+      );
       final authData = await _processAuthentication(refreshToken: refreshToken);
 
       if (authData.minecraftData.profile == null) {
-        debugPrint('プロファイル情報が取得できませんでした');
+        debugPrint('Failed to retrieve profile information');
         return null;
       }
 
@@ -799,11 +821,11 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       );
 
       debugPrint(
-        'MicrosoftアカウントIDからのサインイン成功: ${authData.minecraftData.profile?.name}',
+        'Sign in successful with Microsoft account ID: ${authData.minecraftData.profile?.name}',
       );
       return authData.minecraftData.profile;
     } catch (e) {
-      debugPrint('MicrosoftアカウントIDからのサインインエラー: $e');
+      debugPrint('Error signing in with Microsoft account ID: $e');
       return null;
     }
   }
