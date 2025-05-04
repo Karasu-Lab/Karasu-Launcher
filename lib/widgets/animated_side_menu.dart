@@ -112,6 +112,12 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
                       FlutterI18n.translate(context, "sideMenu.taskManager"),
                       path: '/taskmanager',
                     ),
+                    _buildMenuItem(
+                      Icons.info_outline,
+                      FlutterI18n.translate(context, "sideMenu.about"),
+                      path: '/about',
+                    ),
+                    const SizedBox(height: 16),
                     Consumer(
                       builder: (context, ref, child) {
                         final authState = ref.watch(authenticationProvider);
@@ -131,12 +137,6 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
                       FlutterI18n.translate(context, "sideMenu.settings"),
                       path: '/settings',
                     ),
-                    _buildMenuItem(
-                      Icons.info_outline,
-                      FlutterI18n.translate(context, "sideMenu.about"),
-                      path: '/about',
-                    ),
-                    const SizedBox(height: 16),
                   ],
                 ),
               ],
