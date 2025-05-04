@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 Future<Directory> getAppDirectory() async {
   try {
     final appDocDir = await getApplicationDocumentsDirectory();
-    return Directory(appDocDir.path);
+    return Directory(appDocDir.path.replaceAll('\\', '/'));
   } catch (e) {
     throw Exception('アプリケーションディレクトリの取得に失敗しました: $e');
   }
