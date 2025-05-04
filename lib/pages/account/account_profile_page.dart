@@ -163,6 +163,7 @@ class AccountProfilePage extends ConsumerWidget {
                             context,
                             'accountProfile.signOut',
                           ),
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
                     ),

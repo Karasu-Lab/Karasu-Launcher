@@ -108,14 +108,14 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildMenuItem(
-                      Icons.monitor,
-                      FlutterI18n.translate(context, "sideMenu.taskManager"),
-                      path: '/taskmanager',
-                    ),
-                    _buildMenuItem(
                       Icons.info_outline,
                       FlutterI18n.translate(context, "sideMenu.about"),
                       path: '/about',
+                    ),
+                    _buildMenuItem(
+                      Icons.monitor,
+                      FlutterI18n.translate(context, "sideMenu.taskManager"),
+                      path: '/taskmanager',
                     ),
                     Consumer(
                       builder: (context, ref, child) {
