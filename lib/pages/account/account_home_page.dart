@@ -26,7 +26,9 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
+    );
+
+    _animationController.forward();
   }
 
   @override
@@ -242,7 +244,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                   icon:
                       isRefreshing
                           ? RotationTransition(
-                            turns: _animationController,
+                            turns: _animationController..repeat(),
                             child: const Icon(
                               Icons.refresh,
                               color: Colors.blue,
@@ -267,6 +269,7 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage>
                               _refreshingAccountId = account.id;
                               _switchingAccountId = account.id;
                               if (!_animationController.isAnimating) {
+                                _animationController.reset();
                                 _animationController.repeat();
                               }
                             });
