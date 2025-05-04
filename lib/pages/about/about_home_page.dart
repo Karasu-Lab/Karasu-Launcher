@@ -89,8 +89,7 @@ class _AboutHomePageState extends ConsumerState<AboutHomePage> {
           child: FutureBuilder<PackageInfo>(
             future: _packageInfoFuture,
             builder: (context, snapshot) {
-              String appName =
-                  snapshot.hasData ? snapshot.data!.appName : 'Karasu Launcher';
+              String appName = 'Karasu Launcher';
               String version =
                   snapshot.hasData ? snapshot.data!.version : '1.0.0';
               String buildNumber =
