@@ -140,7 +140,7 @@
         "day": "日"
     },
     "taskManagerPage": {
-        "title": "タスクマネージャー",
+        "title": "タスクマネージャーもどき",
         "noAccounts": "アカウントが登録されていません",
         "offlineUser": "オフラインユーザー",
         "unknownUser": "不明なユーザー",
@@ -272,7 +272,7 @@
         "continue": "続ける"
     },
     "sideMenu": {
-        "taskManager": "タスクマネージャー",
+        "taskManager": "タスクマネージャーもどき",
         "accounts": "アカウント",
         "settings": "設定",
         "about": "このアプリについて",

@@ -1,9 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:karasu_launcher/mixins/logging_mixin.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
-import 'package:karasu_launcher/models/minecraft_state.dart';
 import 'package:karasu_launcher/providers/authentication_provider.dart';
+import 'package:karasu_launcher/providers/log_provider.dart';
 import 'package:karasu_launcher/providers/minecraft_state_provider.dart';
 import 'package:karasu_launcher/utils/minecraft_utils.dart';
 
@@ -11,10 +12,14 @@ final minecraftServiceProvider = Provider<MinecraftService>((ref) {
   return MinecraftService(ref);
 });
 
-class MinecraftService {
+class MinecraftService with LoggingMixin {
   final Ref _ref;
 
   MinecraftService(this._ref);
+
+  @override
+  Ref get ref => _ref;
+
   Future<void> launchMinecraftAsService(
     Profile profile, {
     String? offlinePlayerName,
@@ -24,21 +29,14 @@ class MinecraftService {
 
     notifier.setLaunching(true);
     notifier.updateProgress(0.0, '準備中...');
-    notifier.addLog(
-      'Starting Minecraft (Version: ${profile.lastVersionId})',
-      level: LogLevel.info,
-    );
+    logInfo('Starting Minecraft (Version: ${profile.lastVersionId})');
 
     if (account != null) {
-      notifier.addLog(
-        'Logging in as account: ${account.profile?.name ?? "Unknown"}',
-        level: LogLevel.info,
-      );
+      logInfo('Logging in as account: ${account.profile?.name ?? "Unknown"}');
     } else {
       final playerName = offlinePlayerName ?? 'Player';
-      notifier.addLog(
+      logWarning(
         'Warning: No active account found. Launching in offline mode (Player name: $playerName)',
-        level: LogLevel.warning,
       );
     }
 
@@ -57,10 +55,7 @@ class MinecraftService {
         offlinePlayerName: offlinePlayerName,
       );
     } catch (e) {
-      notifier.addLog(
-        'An error occurred while launching Minecraft: $e',
-        level: LogLevel.error,
-      );
+      logError('An error occurred while launching Minecraft: $e');
       notifier.resetProgress();
     }
   }
@@ -74,12 +69,7 @@ class MinecraftService {
         _addLogWithSource(decodedLine, LogLevel.info, LogSource.javaStdOut);
       }
     } catch (e) {
-      _ref
-          .read(minecraftStateProvider.notifier)
-          .addLog(
-            'Error processing standard output: $e',
-            level: LogLevel.error,
-          );
+      logError('Error processing standard output: $e');
     }
   }
 
@@ -93,18 +83,12 @@ class MinecraftService {
         _addLogWithSource(decodedLine, LogLevel.error, LogSource.javaStdErr);
       }
     } catch (e) {
-      _ref
-          .read(minecraftStateProvider.notifier)
-          .addLog(
-            'Error processing standard error output: $e',
-            level: LogLevel.error,
-          );
+      logError('Error processing standard error output: $e');
     }
   }
 
   void _addLogWithSource(String message, LogLevel level, LogSource source) {
-    _ref
-        .read(minecraftStateProvider.notifier)
-        .addJavaLog(message, level: level, source: source);
+    final isStderr = source == LogSource.javaStdErr;
+    logJava(message, level: level, isStderr: isStderr);
   }
 }

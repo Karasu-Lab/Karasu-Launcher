@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:karasu_launcher/models/minecraft_state.dart';
-import 'package:karasu_launcher/providers/minecraft_state_provider.dart';
+import 'package:karasu_launcher/providers/log_provider.dart';
 import 'dart:async';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -29,9 +28,12 @@ class _LogTabState extends ConsumerState<LogTab>
   Timer? _updateTimer;
   List<LogMessage> _lastLogs = [];
   bool _needsRefiltration = true;
-  bool _isLoading = false;
   bool _isManualScrolling = false;
   final ScrollController _loadingScrollController = ScrollController();
+
+  int _displayedLogsCount = 20;
+  bool _isLoadingMore = false;
+  static const int _loadBatchSize = 20;
 
   @override
   void initState() {
@@ -39,36 +41,44 @@ class _LogTabState extends ConsumerState<LogTab>
     _scrollController.addListener(_handleScrollChange);
     _updateTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (mounted) {
-        final minecraftState = ref.read(minecraftStateProvider);
+        final logState = ref.read(logProvider);
+        final currentLogs = logState.logs;
 
-        if (minecraftState.logs == _lastLogs && !_needsRefiltration) {
+        if (currentLogs == _lastLogs && !_needsRefiltration) {
           return;
         }
 
-        _lastLogs = minecraftState.logs;
-
-        Future.microtask(() {
-          if (!mounted) return;
-          setState(() {
-            _isLoading = true;
-          });
-
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (!mounted) return;
-            setState(() {
-              _currentFilteredLogs = _filteredLogs(_lastLogs);
-              _needsRefiltration = false;
-              _isLoading = false;
-
-              if (_autoScroll &&
-                  _currentFilteredLogs.length > _previousLogCount) {
-                _checkAndScrollToBottom();
-              }
-              _previousLogCount = _currentFilteredLogs.length;
-            });
-          });
-        });
+        _updateLogsWithoutFullReload(currentLogs);
       }
+    });
+  }
+
+  void _updateLogsWithoutFullReload(List<LogMessage> currentLogs) {
+    if (!mounted) return;
+
+    final wasEmpty = _currentFilteredLogs.isEmpty;
+    _lastLogs = currentLogs;
+
+    if (_needsRefiltration) {
+      _currentFilteredLogs = _filteredLogs(_lastLogs);
+      _needsRefiltration = false;
+    } else {
+      final newItems = _lastLogs.length - _previousLogCount;
+      if (newItems > 0) {
+        final newLogs = _lastLogs.sublist(_previousLogCount);
+        final filteredNewLogs = _filteredLogs(newLogs);
+        _currentFilteredLogs.addAll(filteredNewLogs);
+      }
+    }
+
+    setState(() {
+      if (wasEmpty ||
+          (_autoScroll &&
+              _currentFilteredLogs.length > _previousLogCount &&
+              !_isManualScrolling)) {
+        _checkAndScrollToBottom();
+      }
+      _previousLogCount = _lastLogs.length;
     });
   }
 
@@ -100,26 +110,50 @@ class _LogTabState extends ConsumerState<LogTab>
           }
         });
       }
+
+      if (_scrollController.position.pixels <=
+              _scrollController.position.minScrollExtent + 200 &&
+          !_isLoadingMore &&
+          _displayedLogsCount < _currentFilteredLogs.length) {
+        _loadMoreLogs();
+      }
     }
   }
 
+  void _loadMoreLogs() {
+    _isLoadingMore = true;
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() {
+        _displayedLogsCount += _loadBatchSize;
+        _isLoadingMore = false;
+      });
+    });
+  }
+
   void _clearLogs() {
-    ref.read(minecraftStateProvider.notifier).clearLogs();
+    ref.read(logProvider.notifier).clearLogs();
+    setState(() {
+      _displayedLogsCount = 20;
+      _previousLogCount = 0;
+      _currentFilteredLogs.clear();
+    });
   }
 
   void _onFilterChanged() {
     setState(() {
       _needsRefiltration = true;
-      _isLoading = true;
 
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (!mounted) return;
-        setState(() {
-          _currentFilteredLogs = _filteredLogs(_lastLogs);
-          _needsRefiltration = false;
-          _isLoading = false;
+      _currentFilteredLogs = _filteredLogs(_lastLogs);
+      _needsRefiltration = false;
+      _displayedLogsCount = 20;
+
+      if (_autoScroll && _currentFilteredLogs.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _smoothScrollToBottom();
         });
-      });
+      }
     });
   }
 
@@ -134,10 +168,10 @@ class _LogTabState extends ConsumerState<LogTab>
       if (log.level == LogLevel.error && _showErrorLogs) levelMatch = true;
 
       bool sourceMatch = true;
-      if (log.source == LogSource.javaStdOut && !_showJavaStdout) {
+      if (log.source == "javaStdOut" && !_showJavaStdout) {
         sourceMatch = false;
       }
-      if (log.source == LogSource.javaStdErr && !_showJavaStderr) {
+      if (log.source == "javaStdErr" && !_showJavaStderr) {
         sourceMatch = false;
       }
 
@@ -145,15 +179,30 @@ class _LogTabState extends ConsumerState<LogTab>
     }).toList();
   }
 
+  List<LogMessage> _getDisplayedLogs() {
+    if (_currentFilteredLogs.isEmpty) return [];
+
+    final startIndex =
+        (_currentFilteredLogs.length > _displayedLogsCount)
+            ? _currentFilteredLogs.length - _displayedLogsCount
+            : 0;
+
+    return _currentFilteredLogs.sublist(startIndex);
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_autoScroll && !_isLoading && _currentFilteredLogs.isNotEmpty) {
+      if (_autoScroll &&
+          !_isManualScrolling &&
+          _currentFilteredLogs.isNotEmpty) {
         _smoothScrollToBottom();
       }
     });
+
+    final displayedLogs = _getDisplayedLogs();
 
     return Column(
       children: [
@@ -285,85 +334,76 @@ class _LogTabState extends ConsumerState<LogTab>
             height: 300,
             margin: const EdgeInsets.all(8.0),
             child:
-                _isLoading
-                    ? _buildLoadingState()
-                    : _currentFilteredLogs.isEmpty
+                displayedLogs.isEmpty
                     ? Center(
                       child: Text(
                         FlutterI18n.translate(context, 'logTab.noLogs'),
                       ),
                     )
                     : RepaintBoundary(
-                      child: CustomScrollView(
-                        controller: _scrollController,
-                        slivers: [
-                          SliverList(
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              final log = _currentFilteredLogs[index];
-                              return Text(
-                                '${_getFormattedTimestamp(log.timestamp)} ${log.message}',
-                                style: TextStyle(
-                                  color: _getColorForLogLevel(log.level),
+                      child: Stack(
+                        children: [
+                          CustomScrollView(
+                            controller: _scrollController,
+                            slivers: [
+                              if (_isLoadingMore)
+                                const SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Center(
+                                      child: SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              );
-                            }, childCount: _currentFilteredLogs.length),
+
+                              SliverList(
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
+                                  final log = displayedLogs[index];
+                                  return Text(
+                                    '${_getFormattedTimestamp(log.timestamp)} ${log.message}',
+                                    style: TextStyle(
+                                      color: _getColorForLogLevel(log.level),
+                                    ),
+                                  );
+                                }, childCount: displayedLogs.length),
+                              ),
+                            ],
                           ),
+
+                          if (_currentFilteredLogs.length > _displayedLogsCount)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${_displayedLogsCount}/${_currentFilteredLogs.length}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoadingState() {
-    return Stack(
-      children: [
-        RepaintBoundary(
-          child: Skeletonizer(
-            enabled: true,
-            child: ListView.builder(
-              controller: _loadingScrollController,
-              itemCount: 10,
-              itemBuilder: (context, index) {
-                final mockLevel =
-                    index % 4 == 0
-                        ? LogLevel.info
-                        : index % 4 == 1
-                        ? LogLevel.debug
-                        : index % 4 == 2
-                        ? LogLevel.warning
-                        : LogLevel.error;
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 4.0,
-                  ),
-                  child: Text(
-                    '[00:00:00] ${FlutterI18n.translate(context, 'logTab.sampleLogMessage')} $index',
-                    style: TextStyle(
-                      color: _getColorForLogLevel(mockLevel),
-                      fontSize: 13,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        Center(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const CircularProgressIndicator(),
           ),
         ),
       ],

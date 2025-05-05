@@ -1,13 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/models/minecraft_state.dart';
+import 'package:karasu_launcher/providers/log_provider.dart';
+import 'package:karasu_launcher/mixins/logging_mixin.dart';
 
 final minecraftStateProvider =
     StateNotifierProvider<MinecraftStateNotifier, MinecraftState>((ref) {
-      return MinecraftStateNotifier();
+      return MinecraftStateNotifier(ref);
     });
 
-class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
-  MinecraftStateNotifier() : super(MinecraftState());
+class MinecraftStateNotifier extends StateNotifier<MinecraftState>
+    with LoggingMixin {
+  final Ref _ref;
+
+  MinecraftStateNotifier(this._ref) : super(MinecraftState());
+
+  @override
+  Ref get ref => _ref;
 
   void setLaunching(bool isLaunching) {
     state = state.copyWith(
@@ -168,8 +176,20 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
   }
 
   void addLog(String message, {LogLevel level = LogLevel.info}) {
-    final log = LogMessage(message: message, level: level);
-    state = state.copyWith(logs: [...state.logs, log]);
+    switch (level) {
+      case LogLevel.info:
+        logInfo(message);
+        break;
+      case LogLevel.debug:
+        logDebug(message);
+        break;
+      case LogLevel.warning:
+        logWarning(message);
+        break;
+      case LogLevel.error:
+        logError(message);
+        break;
+    }
   }
 
   void addJavaLog(
@@ -178,36 +198,21 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
     LogSource source = LogSource.app,
     String? userId,
   }) {
-    final prefix =
-        level == LogLevel.error || level == LogLevel.warning ? '[Java] ' : '';
-    final userPrefix = userId != null ? '[User: $userId] ' : '';
-
-    final log = LogMessage(
-      message: userPrefix + prefix + message,
-      level: level,
-      source: source,
-    );
-    state = state.copyWith(logs: [...state.logs, log]);
-  }
-
-  void clearLogs() {
-    state = state.copyWith(logs: []);
+    final isStderr = source == LogSource.javaStdErr;
+    logJava(message, level: level, isStderr: isStderr, userId: userId);
   }
 
   void onAssetsProgress(double progress, int current, int total) {
-    // 常にUIの進捗は更新する
     updateProgress(
       progress,
       'Downloading assets: ${(progress * 100).toInt()}%',
     );
 
-    // 10%単位でのみログを出力する
     if (current == 1 ||
         current == total ||
         (progress * 10).toInt() != ((progress - (1.0 / total)) * 10).toInt()) {
-      addLog(
+      logInfo(
         'Downloading assets: $current/$total (${(progress * 100).toInt()}%)',
-        level: LogLevel.info,
       );
     }
   }
@@ -218,20 +223,17 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
     int current,
     int total,
   ) {
-    // 常にUIの進捗は更新する
     updateUserProgress(
       userId,
       progress,
       'Downloading assets: ${(progress * 100).toInt()}%',
     );
 
-    // 10%単位でのみログを出力する
     if (current == 1 ||
         current == total ||
         (progress * 10).toInt() != ((progress - (1.0 / total)) * 10).toInt()) {
-      addLog(
+      logDebug(
         '[User: $userId] Downloading assets: $current/$total (${(progress * 100).toInt()}%)',
-        level: LogLevel.debug,
       );
     }
   }
@@ -241,9 +243,8 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
       progress,
       'Downloading libraries: ${(progress * 100).toInt()}%',
     );
-    addLog(
+    logInfo(
       'Downloading libraries: $current/$total (${(progress * 100).toInt()}%)',
-      level: LogLevel.info,
     );
   }
 
@@ -258,23 +259,19 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
       progress,
       'Downloading libraries: ${(progress * 100).toInt()}%',
     );
-    addLog(
+    logWarning(
       '[User: $userId] Downloading libraries: $current/$total (${(progress * 100).toInt()}%)',
-      level: LogLevel.warning,
     );
   }
 
   void onPrepareComplete() {
     updateProgress(1.0, 'Launching...');
-    addLog('Minecraft preparation complete', level: LogLevel.info);
+    logInfo('Minecraft preparation complete');
   }
 
   void onUserPrepareComplete(String userId) {
     updateUserProgress(userId, 1.0, 'Launching...');
-    addLog(
-      '[User: $userId] Minecraft preparation complete',
-      level: LogLevel.info,
-    );
+    logInfo('[User: $userId] Minecraft preparation complete');
   }
 
   void onNativesProgress(double progress, int current, int total) {
@@ -282,9 +279,8 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
       progress,
       'Extracting native libraries: ${(progress * 100).toInt()}%',
     );
-    addLog(
+    logInfo(
       'Extracting native libraries: $current/$total (${(progress * 100).toInt()}%)',
-      level: LogLevel.info,
     );
   }
 
@@ -299,9 +295,8 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
       progress,
       'Extracting native libraries: ${(progress * 100).toInt()}%',
     );
-    addLog(
+    logInfo(
       '[User: $userId] Extracting native libraries: $current/$total (${(progress * 100).toInt()}%)',
-      level: LogLevel.info,
     );
   }
 
@@ -315,7 +310,12 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
         normal
             ? 'Minecraft exited normally (exit code: $exitCode)'
             : 'Minecraft exited abnormally (exit code: $exitCode)';
-    addLog(exitMessage, level: normal ? LogLevel.info : LogLevel.error);
+
+    if (normal) {
+      logInfo(exitMessage);
+    } else {
+      logError(exitMessage);
+    }
   }
 
   void onUserExit(
@@ -335,11 +335,16 @@ class MinecraftStateNotifier extends StateNotifier<MinecraftState> {
         normal
             ? '[User: $userId] Minecraft exited normally (exit code: $exitCode)'
             : '[User: $userId] Minecraft exited abnormally (exit code: $exitCode)';
-    addLog(exitMessage, level: normal ? LogLevel.info : LogLevel.error);
+
+    if (normal) {
+      logInfo(exitMessage);
+    } else {
+      logError(exitMessage);
+    }
   }
 
   void onMinecraftLaunch() {
-    addLog('Minecraft has been launched', level: LogLevel.info);
+    logInfo('Minecraft has been launched');
     resetProgress();
   }
 }

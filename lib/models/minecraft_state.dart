@@ -1,3 +1,5 @@
+import 'package:karasu_launcher/providers/log_provider.dart';
+
 class UserProgress {
   final double value;
   final String text;
@@ -52,29 +54,6 @@ class MinecraftState {
     );
   }
 }
-
-class LogMessage {
-  final DateTime timestamp;
-  final String message;
-  final LogLevel level;
-  final LogSource source;
-
-  LogMessage({
-    required this.message,
-    this.level = LogLevel.info,
-    this.source = LogSource.app,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
-
-  @override
-  String toString() {
-    return '${timestamp.toIso8601String()} [${describeEnum(source)}:${describeEnum(level)}] $message';
-  }
-}
-
-enum LogLevel { debug, info, warning, error }
-
-enum LogSource { app, javaStdOut, javaStdErr }
 
 String describeEnum(Object enumValue) {
   final String description = enumValue.toString();

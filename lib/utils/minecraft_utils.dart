@@ -4,7 +4,7 @@ import 'package:flutter/material.dart' hide Action;
 import 'package:http/http.dart' as http;
 import 'package:karasu_launcher/models/auth/account.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
-import 'package:karasu_launcher/models/minecraft_state.dart'; // LogSourceを使用するためにインポート
+import 'package:karasu_launcher/providers/log_provider.dart';
 import 'package:path/path.dart' as p;
 
 import '../models/launcher_versions_v2.dart';
