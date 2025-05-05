@@ -51,7 +51,6 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // プロファイルの分類とフィルタリング
     final separatedProfiles = ProfileUtils.separateProfiles(
       profilesData.profiles,
     );
@@ -72,7 +71,6 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
       showOldVersions,
     );
 
-    // ソート
     ProfileUtils.sortProfiles(filteredCustomProfiles, sortOption);
 
     return Container(
@@ -112,13 +110,11 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // デフォルトプロファイル
                         DefaultProfileList(
                           profiles: filteredDefaultProfiles,
                           selectedProfileId: selectedProfileId,
                         ),
 
-                        // カスタムプロファイルのヘッダー
                         Text(
                           FlutterI18n.translate(
                             context,
@@ -129,7 +125,6 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
                         ),
                         const SizedBox(height: 8),
 
-                        // カスタムプロファイルのリスト
                         customProfiles.isEmpty
                             ? Center(
                               child: Text(

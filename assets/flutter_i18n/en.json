@@ -98,7 +98,9 @@
         "loadingVersions": "Loading versions...",
         "failedToLoadVersions": "Failed to load versions",
         "selected": "Selected",
-        "none": "None"
+        "none": "None",
+        "showModVersions": "Show mod versions",
+        "selectModLoader": "Select mod loader"
     },
     "profileCard": {
         "version": "Version: {version}",

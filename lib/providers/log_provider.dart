@@ -9,7 +9,7 @@ enum LogSource { app, javaStdOut, javaStdErr, network }
 
 /// ログメッセージクラス
 class LogMessage {
-  final String source;
+  final LogSource source;
   final LogLevel level;
   final dynamic message;
   final DateTime timestamp;
@@ -23,7 +23,7 @@ class LogMessage {
 
   @override
   String toString() {
-    return '[$timestamp] [${level.name.toUpperCase()}] [$source] $message';
+    return '[$timestamp] [${level.name.toUpperCase()}] [${source.name}] $message';
   }
 }
 
@@ -51,26 +51,25 @@ class LogNotifier extends StateNotifier<LogState> with LoggingMixin {
   void addLog(LogMessage log) {
     state = state.copyWith(logs: [...state.logs, log]);
   }
-
   /// 情報ログを追加
-  void info(String source, dynamic message) {
+  void info(LogSource source, dynamic message) {
     addLog(LogMessage(source: source, level: LogLevel.info, message: message));
   }
 
   /// デバッグログを追加
-  void debug(String source, dynamic message) {
+  void debug(LogSource source, dynamic message) {
     addLog(LogMessage(source: source, level: LogLevel.debug, message: message));
   }
 
   /// 警告ログを追加
-  void warning(String source, dynamic message) {
+  void warning(LogSource source, dynamic message) {
     addLog(
       LogMessage(source: source, level: LogLevel.warning, message: message),
     );
   }
 
   /// エラーログを追加
-  void error(String source, dynamic message) {
+  void error(LogSource source, dynamic message) {
     addLog(LogMessage(source: source, level: LogLevel.error, message: message));
   }
 

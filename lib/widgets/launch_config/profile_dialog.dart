@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/models/launcher_versions_v2.dart';
+import 'package:karasu_launcher/models/mod_loader.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 
@@ -24,7 +25,8 @@ class _ProfileDialogState extends State<ProfileDialog> {
   bool showSnapshots = false;
   bool showReleases = true;
   bool showOldVersions = false;
-
+  bool showModVersions = false;
+  ModLoaderType? selectedModLoader;
   @override
   void initState() {
     super.initState();
@@ -33,6 +35,32 @@ class _ProfileDialogState extends State<ProfileDialog> {
     selectedVersion = profile?.lastVersionId;
     gameDirController = TextEditingController(text: profile?.gameDir ?? '');
     javaArgsController = TextEditingController(text: profile?.javaArgs ?? '');
+  }
+
+  void _checkAndSetModLoader(
+    String versionId,
+    List<MinecraftVersion> versions,
+  ) {
+    final selectedVersionDetails = versions.firstWhere(
+      (v) => v.id == versionId,
+      orElse:
+          () => MinecraftVersion(
+            id: versionId,
+            type: 'unknown',
+            url: '',
+            time: '',
+            releaseTime: '',
+            sha1: '',
+            complianceLevel: 0,
+          ),
+    );
+
+    if (selectedVersionDetails.modLoader != null) {
+      setState(() {
+        showModVersions = true;
+        selectedModLoader = selectedVersionDetails.modLoader!.type;
+      });
+    }
   }
 
   @override
@@ -197,7 +225,6 @@ class _ProfileDialogState extends State<ProfileDialog> {
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 8),
-
             Row(
               children: [
                 Checkbox(
@@ -240,6 +267,72 @@ class _ProfileDialogState extends State<ProfileDialog> {
                 ),
               ],
             ),
+
+            Row(
+              children: [
+                Checkbox(
+                  value: showModVersions,
+                  onChanged: (value) {
+                    setState(() {
+                      showModVersions = value ?? false;
+
+                      if (showModVersions && selectedModLoader == null) {
+                        selectedModLoader = ModLoaderType.fabric;
+                      } else if (!showModVersions) {
+                        selectedModLoader = null;
+                      }
+                    });
+                  },
+                ),
+                Text(
+                  FlutterI18n.translate(
+                    context,
+                    'profileDialog.showModVersions',
+                  ),
+                ),
+              ],
+            ),
+
+            if (showModVersions)
+              Padding(
+                padding: const EdgeInsets.only(left: 32.0, top: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      FlutterI18n.translate(
+                        context,
+                        'profileDialog.selectModLoader',
+                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8.0,
+                      children: [
+                        for (final loaderType in ModLoaderType.values)
+                          if (loaderType != ModLoaderType.other)
+                            ChoiceChip(
+                              label: Text(loaderType.name.toUpperCase()),
+                              selected: selectedModLoader == loaderType,
+                              onSelected: (bool selected) {
+                                setState(() {
+                                  if (selected) {
+                                    selectedModLoader = loaderType;
+                                    if (nameController.text.trim().isEmpty &&
+                                        selectedVersion != null) {
+                                      nameController.text =
+                                          '$selectedVersion (${loaderType.name})';
+                                    }
+                                  }
+                                });
+                              },
+                            ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
 
             latestVersions.when(
               data:
@@ -293,17 +386,30 @@ class _ProfileDialogState extends State<ProfileDialog> {
             const SizedBox(height: 12),
             versions.when(
               data: (versionList) {
-                final filteredVersions =
-                    versionList
-                        .where(
-                          (version) =>
-                              (showReleases && version.type == 'release') ||
-                              (showSnapshots && version.type == 'snapshot') ||
-                              (showOldVersions &&
-                                  version.type != 'release' &&
-                                  version.type != 'snapshot'),
-                        )
-                        .toList();
+                List<MinecraftVersion> filteredVersions = [];
+
+                if (showModVersions && selectedModLoader != null) {
+                  filteredVersions =
+                      versionList
+                          .where(
+                            (version) =>
+                                version.modLoader != null &&
+                                version.modLoader!.type == selectedModLoader,
+                          )
+                          .toList();
+                } else {
+                  filteredVersions =
+                      versionList
+                          .where(
+                            (version) =>
+                                (showReleases && version.type == 'release') ||
+                                (showSnapshots && version.type == 'snapshot') ||
+                                (showOldVersions &&
+                                    version.type != 'release' &&
+                                    version.type != 'snapshot'),
+                          )
+                          .toList();
+                }
 
                 final bool selectedVersionExists =
                     selectedVersion != null &&
@@ -376,6 +482,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
                   children: List.generate(versions.length, (index) {
                     final version = versions[index];
                     final isSelected = version.id == selectedVersion;
+                    final bool hasMod = version.modLoader != null;
 
                     return SizedBox(
                       height: 40,
@@ -384,6 +491,15 @@ class _ProfileDialogState extends State<ProfileDialog> {
                         onTap: () {
                           setState(() {
                             selectedVersion = version.id;
+
+                            if (nameController.text.trim().isEmpty) {
+                              if (version.modLoader != null) {
+                                nameController.text =
+                                    '${version.id} (${version.modLoader!.type.name})';
+                              } else {
+                                nameController.text = version.id;
+                              }
+                            }
                           });
                         },
                         child: Padding(
@@ -391,7 +507,9 @@ class _ProfileDialogState extends State<ProfileDialog> {
                           child: Row(
                             children: [
                               Icon(
-                                version.type == 'release'
+                                hasMod
+                                    ? Icons.extension
+                                    : version.type == 'release'
                                     ? Icons.videogame_asset
                                     : version.type == 'snapshot'
                                     ? Icons.science
@@ -404,21 +522,51 @@ class _ProfileDialogState extends State<ProfileDialog> {
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text(
-                                  version.id,
-                                  style: TextStyle(
-                                    fontWeight:
-                                        isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                    color:
-                                        isSelected
-                                            ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                            : null,
-                                  ),
+                                child: RichText(
                                   overflow: TextOverflow.ellipsis,
+                                  text: TextSpan(
+                                    style: TextStyle(
+                                      color:
+                                          isSelected
+                                              ? Theme.of(
+                                                context,
+                                              ).colorScheme.primary
+                                              : Theme.of(
+                                                context,
+                                              ).textTheme.bodyLarge?.color,
+                                      fontWeight:
+                                          isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                    ),
+                                    children: [
+                                      TextSpan(text: version.id),
+                                      if (hasMod)
+                                        TextSpan(
+                                          text:
+                                              ' (${version.modLoader?.type.name.toUpperCase()} ${version.modLoader?.version})',
+                                          style: TextStyle(
+                                            fontStyle: FontStyle.italic,
+                                            fontSize: 12,
+                                            color:
+                                                isSelected
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .primary
+                                                        .withAlpha(
+                                                          (0.8 * 255).toInt(),
+                                                        )
+                                                    : Theme.of(context)
+                                                        .textTheme
+                                                        .bodyMedium
+                                                        ?.color
+                                                        ?.withAlpha(
+                                                          (0.8 * 255).toInt(),
+                                                        ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],

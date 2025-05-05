@@ -67,7 +67,7 @@ class VersionInfo {
 class Arguments {
   @JsonKey(fromJson: _parseGameArguments)
   List<GameArgument>? game;
-  
+
   @JsonKey(fromJson: _parseJvmArguments)
   List<JvmArgument>? jvm;
 
@@ -77,7 +77,7 @@ class Arguments {
       _$ArgumentsFromJson(json);
 
   Map<String, dynamic> toJson() => _$ArgumentsToJson(this);
-  
+
   static List<GameArgument>? _parseGameArguments(dynamic value) {
     if (value == null) return null;
     if (value is List) {
@@ -92,7 +92,7 @@ class Arguments {
     }
     throw FormatException('予期しないgame引数の形式: $value');
   }
-  
+
   static List<JvmArgument>? _parseJvmArguments(dynamic value) {
     if (value == null) return null;
     if (value is List) {
@@ -282,8 +282,10 @@ class Libraries {
   LibraryDownloads? downloads;
   String? name;
   List<Rules>? rules;
+  @JsonKey(name: 'url')
+  String? url;
 
-  Libraries({this.downloads, this.name, this.rules});
+  Libraries({this.downloads, this.name, this.rules, this.url});
 
   factory Libraries.fromJson(Map<String, dynamic> json) =>
       _$LibrariesFromJson(json);

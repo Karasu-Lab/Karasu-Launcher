@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import '../providers/side_menu_provider.dart';
 import '../providers/authentication_provider.dart';
 import './account/user_icon.dart';
+import 'package:twemoji/twemoji.dart';
 
 class AnimatedSideMenu extends ConsumerStatefulWidget {
   const AnimatedSideMenu({super.key});
@@ -91,12 +93,23 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
                           path: '/server',
                         ),
                         _buildMenuItem(
-                          'https://modrinth.com/favicon-light.ico',
+                          RichText(
+                            text: TwemojiTextSpan(
+                              text: '🦵',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ),
                           'Modrinth',
                           path: '/mod/modrinth',
                         ),
                         _buildMenuItem(
-                          'https://static-beta.curseforge.com/images/favicon.ico',
+                          SvgPicture.asset(
+                            "assets/anvil.svg",
+                            colorFilter: ColorFilter.mode(
+                              Theme.of(context).iconTheme.color!,
+                              BlendMode.srcIn,
+                            ),
+                          ),
                           'CurseForge',
                           path: '/mod/curseforge',
                         ),
@@ -155,7 +168,17 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
 
     Widget leadingWidget;
     if (iconData is Widget) {
-      leadingWidget = iconData;
+      if (iconData is SvgPicture) {
+        leadingWidget = SizedBox(width: 18, height: 18, child: iconData);
+      } else if (iconData is RichText) {
+        leadingWidget = SizedBox(
+          width: 21,
+          height: 21,
+          child: FittedBox(fit: BoxFit.contain, child: iconData),
+        );
+      } else {
+        leadingWidget = SizedBox(width: 18, height: 18, child: iconData);
+      }
     } else if (iconData is IconData) {
       leadingWidget = Icon(
         iconData,

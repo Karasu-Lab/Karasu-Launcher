@@ -98,7 +98,9 @@
         "loadingVersions": "正在加载版本...",
         "failedToLoadVersions": "加载版本失败",
         "selected": "已选择",
-        "none": "无"
+        "none": "无",
+        "showModVersions": "显示MOD版本",
+        "selectModLoader": "选择MOD加载器"
     },
     "profileCard": {
         "version": "版本: {version}",

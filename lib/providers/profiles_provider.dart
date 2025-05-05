@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/models/launcher_versions_v2.dart';
+import 'package:karasu_launcher/models/mod_loader.dart';
 import 'package:karasu_launcher/utils/file_utils.dart';
 import 'package:uuid/uuid.dart';
 
@@ -30,7 +31,17 @@ final profilesLoadingProvider = Provider<bool>((ref) {
 });
 
 final versionsProvider = FutureProvider<LauncherVersionsV2?>((ref) async {
-  return await fetchVersionManifest();
+  final manifestData = await fetchVersionManifest();
+
+  // ローカルのMODローダーバージョンを取得
+  final localVersions = await loadLocalVersions();
+
+  // オンラインとローカルのバージョンを結合
+  if (manifestData != null && localVersions.isNotEmpty) {
+    return manifestData.mergeWithLocalVersions(localVersions);
+  }
+
+  return manifestData;
 });
 
 final availableVersionsProvider = FutureProvider<List<MinecraftVersion>>((
@@ -55,6 +66,38 @@ final snapshotVersionsProvider = FutureProvider<List<MinecraftVersion>>((
 ) async {
   final versions = await ref.watch(availableVersionsProvider.future);
   return versions.where((version) => version.type == 'snapshot').toList();
+});
+
+final modVersionsProvider = FutureProvider<List<MinecraftVersion>>((ref) async {
+  final versions = await ref.watch(availableVersionsProvider.future);
+  return versions.where((version) => version.modLoader != null).toList();
+});
+
+final fabricVersionsProvider = FutureProvider<List<MinecraftVersion>>((
+  ref,
+) async {
+  final versions = await ref.watch(modVersionsProvider.future);
+  return versions
+      .where((version) => version.modLoader?.type == ModLoaderType.fabric)
+      .toList();
+});
+
+final forgeVersionsProvider = FutureProvider<List<MinecraftVersion>>((
+  ref,
+) async {
+  final versions = await ref.watch(modVersionsProvider.future);
+  return versions
+      .where((version) => version.modLoader?.type == ModLoaderType.forge)
+      .toList();
+});
+
+final quiltVersionsProvider = FutureProvider<List<MinecraftVersion>>((
+  ref,
+) async {
+  final versions = await ref.watch(modVersionsProvider.future);
+  return versions
+      .where((version) => version.modLoader?.type == ModLoaderType.quilt)
+      .toList();
 });
 
 final latestVersionsProvider = FutureProvider<Map<String, String>>((ref) async {

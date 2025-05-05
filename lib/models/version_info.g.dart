@@ -236,12 +236,14 @@ Libraries _$LibrariesFromJson(Map<String, dynamic> json) => Libraries(
       (json['rules'] as List<dynamic>?)
           ?.map((e) => Rules.fromJson(e as Map<String, dynamic>))
           .toList(),
+  url: json['url'] as String?,
 );
 
 Map<String, dynamic> _$LibrariesToJson(Libraries instance) => <String, dynamic>{
   'downloads': instance.downloads,
   'name': instance.name,
   'rules': instance.rules,
+  'url': instance.url,
 };
 
 LibraryDownloads _$LibraryDownloadsFromJson(Map<String, dynamic> json) =>

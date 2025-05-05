@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/providers/log_provider.dart';
 import 'dart:async';
-import 'package:skeletonizer/skeletonizer.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 
 class LogTab extends ConsumerStatefulWidget {
@@ -96,8 +96,16 @@ class _LogTabState extends ConsumerState<LogTab>
       final isScrolling = _scrollController.position.isScrollingNotifier.value;
 
       if (isScrolling) {
+        final isUserScroll =
+            _scrollController.position.userScrollDirection !=
+            ScrollDirection.idle;
+
         setState(() {
           _isManualScrolling = true;
+
+          if (isUserScroll && _autoScroll) {
+            _autoScroll = false;
+          }
         });
 
         Future.delayed(const Duration(milliseconds: 500), () {
@@ -168,11 +176,15 @@ class _LogTabState extends ConsumerState<LogTab>
       if (log.level == LogLevel.error && _showErrorLogs) levelMatch = true;
 
       bool sourceMatch = true;
-      if (log.source == "javaStdOut" && !_showJavaStdout) {
-        sourceMatch = false;
-      }
-      if (log.source == "javaStdErr" && !_showJavaStderr) {
-        sourceMatch = false;
+      switch (log.source) {
+        case LogSource.javaStdOut:
+          sourceMatch = _showJavaStdout;
+          break;
+        case LogSource.javaStdErr:
+          sourceMatch = _showJavaStderr;
+          break;
+        case LogSource.app:
+        case LogSource.network:
       }
 
       return levelMatch && sourceMatch;
@@ -371,7 +383,7 @@ class _LogTabState extends ConsumerState<LogTab>
                                   return Text(
                                     '${_getFormattedTimestamp(log.timestamp)} ${log.message}',
                                     style: TextStyle(
-                                      color: _getColorForLogLevel(log.level),
+                                      color: _getColorForLog(log),
                                     ),
                                   );
                                 }, childCount: displayedLogs.length),
@@ -393,7 +405,7 @@ class _LogTabState extends ConsumerState<LogTab>
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  '${_displayedLogsCount}/${_currentFilteredLogs.length}',
+                                  '$_displayedLogsCount/${_currentFilteredLogs.length}',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 12,
@@ -456,6 +468,14 @@ class _LogTabState extends ConsumerState<LogTab>
       case LogLevel.error:
         return Colors.red.shade700;
     }
+  }
+
+  Color _getColorForLog(LogMessage log) {
+    if (log.source == LogSource.javaStdOut) {
+      return Colors.lightBlue.shade300;
+    }
+
+    return _getColorForLogLevel(log.level);
   }
 
   @override

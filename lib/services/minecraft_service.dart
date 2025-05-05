@@ -6,6 +6,7 @@ import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/providers/authentication_provider.dart';
 import 'package:karasu_launcher/providers/log_provider.dart';
 import 'package:karasu_launcher/providers/minecraft_state_provider.dart';
+import 'package:karasu_launcher/utils/minecraft/launch/launcher_factory.dart';
 import 'package:karasu_launcher/utils/minecraft_utils.dart';
 
 final minecraftServiceProvider = Provider<MinecraftService>((ref) {
@@ -41,7 +42,10 @@ class MinecraftService with LoggingMixin {
     }
 
     try {
-      await launchMinecraft(
+      // 標準ランチャーを使用
+      final launcher = LauncherFactory().getStandardLauncher();
+      
+      await launcher.launchMinecraft(
         profile,
         onAssetsProgress: notifier.onAssetsProgress,
         onLibrariesProgress: notifier.onLibrariesProgress,
@@ -63,11 +67,25 @@ class MinecraftService with LoggingMixin {
   void _handleStdout(String line, LogSource source) {
     try {
       final decodedLine = utf8.decode(line.codeUnits, allowMalformed: true);
-      if (decodedLine.toLowerCase().contains("debug")) {
-        _addLogWithSource(decodedLine, LogLevel.debug, LogSource.javaStdOut);
+
+      LogLevel level;
+
+      final lowerLine = decodedLine.toLowerCase();
+      if (lowerLine.contains("debug")) {
+        level = LogLevel.debug;
+      } else if (lowerLine.contains("asset") ||
+          lowerLine.contains("resource")) {
+        level = LogLevel.debug;
+      } else if (lowerLine.contains("library") || lowerLine.contains("lib")) {
+        level = LogLevel.warning;
+      } else if (lowerLine.contains("error") ||
+          lowerLine.contains("exception")) {
+        level = LogLevel.error;
       } else {
-        _addLogWithSource(decodedLine, LogLevel.info, LogSource.javaStdOut);
+        level = LogLevel.info;
       }
+
+      _addLogWithSource(decodedLine, level, LogSource.javaStdOut);
     } catch (e) {
       logError('Error processing standard output: $e');
     }
@@ -76,19 +94,28 @@ class MinecraftService with LoggingMixin {
   void _handleStderr(String line, LogSource source) {
     try {
       final decodedLine = utf8.decode(line.codeUnits, allowMalformed: true);
-      if (decodedLine.toLowerCase().contains("warn") ||
-          decodedLine.toLowerCase().contains("warning")) {
-        _addLogWithSource(decodedLine, LogLevel.warning, LogSource.javaStdErr);
+
+      LogLevel level;
+
+      final lowerLine = decodedLine.toLowerCase();
+      if (lowerLine.contains("library") || lowerLine.contains("lib")) {
+        level = LogLevel.warning;
+      } else if (lowerLine.contains("warn") || lowerLine.contains("warning")) {
+        level = LogLevel.warning;
+      } else if (lowerLine.contains("asset") ||
+          lowerLine.contains("resource")) {
+        level = LogLevel.debug;
       } else {
-        _addLogWithSource(decodedLine, LogLevel.error, LogSource.javaStdErr);
+        level = LogLevel.error;
       }
+
+      _addLogWithSource(decodedLine, level, LogSource.javaStdErr);
     } catch (e) {
       logError('Error processing standard error output: $e');
     }
   }
 
   void _addLogWithSource(String message, LogLevel level, LogSource source) {
-    final isStderr = source == LogSource.javaStdErr;
-    logJava(message, level: level, isStderr: isStderr);
+    logJava(message, level: level, isStderr: source == LogSource.javaStdErr);
   }
 }

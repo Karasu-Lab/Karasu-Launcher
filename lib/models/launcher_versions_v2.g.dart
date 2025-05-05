@@ -39,6 +39,12 @@ MinecraftVersion _$MinecraftVersionFromJson(Map<String, dynamic> json) =>
       releaseTime: json['releaseTime'] as String,
       sha1: json['sha1'] as String,
       complianceLevel: (json['complianceLevel'] as num).toInt(),
+      modLoader:
+          json['modLoader'] == null
+              ? null
+              : ModLoader.fromJson(json['modLoader'] as Map<String, dynamic>),
+      isLocal: json['isLocal'] as bool?,
+      localPath: json['localPath'] as String?,
     );
 
 Map<String, dynamic> _$MinecraftVersionToJson(MinecraftVersion instance) =>
@@ -50,4 +56,7 @@ Map<String, dynamic> _$MinecraftVersionToJson(MinecraftVersion instance) =>
       'releaseTime': instance.releaseTime,
       'sha1': instance.sha1,
       'complianceLevel': instance.complianceLevel,
+      if (instance.modLoader case final value?) 'modLoader': value,
+      if (instance.isLocal case final value?) 'isLocal': value,
+      if (instance.localPath case final value?) 'localPath': value,
     };
