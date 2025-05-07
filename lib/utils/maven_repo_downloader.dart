@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:crypto/crypto.dart';
 
 class MavenArtifact {
   final String groupId;
@@ -155,5 +156,78 @@ class MavenRepoDownloader {
     }
 
     return downloadedFiles;
+  }
+
+  /// 直接URLからファイルをダウンロード
+  static Future<File> downloadFromDirectUrl({
+    required String url,
+    required String filePath,
+    String? sha1,
+    int? fileSize,
+    bool forceDownload = false,
+  }) async {
+    try {
+      final file = File(filePath);
+
+      // ファイルが既に存在し、forceDownloadがfalseの場合はスキップ
+      if (!forceDownload && await file.exists()) {
+        // SHA1チェックが必要な場合は検証
+        if (sha1 != null) {
+          final fileHash = await getFileSha1(file);
+          if (fileHash == sha1) {
+            debugPrint('ファイルが既に存在し、SHA1が一致します: $filePath');
+            return file;
+          }
+        } else {
+          debugPrint('ファイルが既に存在します: $filePath');
+          return file;
+        }
+      }
+
+      debugPrint('ダウンロード中: $url -> $filePath');
+
+      // 親ディレクトリの作成
+      await file.parent.create(recursive: true);
+
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode != 200) {
+        throw Exception('ファイルのダウンロードに失敗しました: ${response.statusCode}');
+      }
+
+      // ファイルサイズの検証（指定がある場合）
+      if (fileSize != null && response.bodyBytes.length != fileSize) {
+        throw Exception(
+          'ファイルサイズが一致しません: 期待=$fileSize, 実際=${response.bodyBytes.length}',
+        );
+      }
+
+      await file.writeAsBytes(response.bodyBytes);
+
+      // SHA1の検証
+      if (sha1 != null) {
+        final downloadedHash = await getFileSha1(file);
+        if (downloadedHash != sha1) {
+          await file.delete();
+          throw Exception('SHA1チェックサムが一致しません');
+        }
+      }
+
+      debugPrint('ダウンロード完了: $filePath');
+      return file;
+    } catch (e) {
+      throw Exception('ファイルのダウンロードに失敗しました: $e');
+    }
+  }
+
+  /// ファイルのSHA1ハッシュを計算する
+  static Future<String> getFileSha1(File file) async {
+    try {
+      final bytes = await file.readAsBytes();
+      final digest = sha1.convert(bytes);
+      return digest.toString();
+    } catch (e) {
+      throw Exception('SHA1ハッシュの計算に失敗しました: $e');
+    }
   }
 }

@@ -42,6 +42,8 @@ dependencies:
   font_awesome_flutter: ^10.8.0
   flutter_svg: ^2.1.0
   twemoji: ^0.1.0
+  pub_semver: ^2.2.0
+  text_search: ^1.0.2
 
 dev_dependencies:
   flutter_test:

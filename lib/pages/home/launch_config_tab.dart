@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
+import 'package:karasu_launcher/providers/filter_provider.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
 import 'package:karasu_launcher/widgets/launch_config/profile_dialog.dart';
 import 'package:karasu_launcher/widgets/launch_config/profile_filter.dart';
@@ -16,9 +17,6 @@ class LaunchConfigTab extends ConsumerStatefulWidget {
 }
 
 class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
-  bool showReleases = true;
-  bool showSnapshots = false;
-  bool showOldVersions = false;
   ProfileSortOption sortOption = ProfileSortOption.custom;
 
   @override
@@ -46,6 +44,7 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
   Widget build(BuildContext context) {
     final profilesData = ref.watch(profilesProvider);
     final selectedProfileId = ref.watch(selectedProfileProvider);
+    final filterSettings = ref.watch(profileFilterProvider);
 
     if (profilesData == null) {
       return const Center(child: CircularProgressIndicator());
@@ -56,19 +55,32 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
     );
     final defaultProfiles = separatedProfiles['default'] ?? {};
     final customProfiles = separatedProfiles['custom'] ?? {};
-
     final filteredDefaultProfiles = ProfileUtils.filterProfiles(
       defaultProfiles,
-      showReleases,
-      showSnapshots,
-      showOldVersions,
+      filterSettings.showReleases,
+      filterSettings.showSnapshots,
+      filterSettings.showOldVersions,
+      showModProfiles: filterSettings.showModProfiles,
+      showVanillaProfiles: filterSettings.showVanillaProfiles,
+      showFabricProfiles: filterSettings.showFabricProfiles ?? false,
+      showForgeProfiles: filterSettings.showForgeProfiles ?? false,
+      showLiteLoaderProfiles: filterSettings.showLiteLoaderProfiles ?? false,
+      showNeoForgeProfiles: filterSettings.showNeoForgeProfiles ?? false,
+      showQuiltProfiles: filterSettings.showQuiltProfiles ?? false,
     );
 
     final filteredCustomProfiles = ProfileUtils.filterProfiles(
       customProfiles,
-      showReleases,
-      showSnapshots,
-      showOldVersions,
+      filterSettings.showReleases,
+      filterSettings.showSnapshots,
+      filterSettings.showOldVersions,
+      showModProfiles: filterSettings.showModProfiles,
+      showVanillaProfiles: filterSettings.showVanillaProfiles,
+      showFabricProfiles: filterSettings.showFabricProfiles ?? false,
+      showForgeProfiles: filterSettings.showForgeProfiles ?? false,
+      showLiteLoaderProfiles: filterSettings.showLiteLoaderProfiles ?? false,
+      showNeoForgeProfiles: filterSettings.showNeoForgeProfiles ?? false,
+      showQuiltProfiles: filterSettings.showQuiltProfiles ?? false,
     );
 
     ProfileUtils.sortProfiles(filteredCustomProfiles, sortOption);
@@ -114,7 +126,6 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
                           profiles: filteredDefaultProfiles,
                           selectedProfileId: selectedProfileId,
                         ),
-
                         Text(
                           FlutterI18n.translate(
                             context,
@@ -124,7 +135,6 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-
                         customProfiles.isEmpty
                             ? Center(
                               child: Text(
@@ -162,29 +172,59 @@ class _LaunchConfigTabState extends ConsumerState<LaunchConfigTab> {
   }
 
   Widget _buildFilterRow() {
+    final filterSettings = ref.watch(profileFilterProvider);
+    final filterNotifier = ref.read(profileFilterProvider.notifier);
+
     return Row(
       children: [
         Expanded(
           child: Container(
             margin: const EdgeInsets.only(top: 10.0),
             child: ProfileFilter(
-              showReleases: showReleases,
-              showSnapshots: showSnapshots,
-              showOldVersions: showOldVersions,
+              showReleases: filterSettings.showReleases,
+              showSnapshots: filterSettings.showSnapshots,
+              showOldVersions: filterSettings.showOldVersions,
+              showModProfiles: filterSettings.showModProfiles,
+              showVanillaProfiles: filterSettings.showVanillaProfiles,
+              showFabricProfiles: filterSettings.showFabricProfiles ?? false,
+              showForgeProfiles: filterSettings.showForgeProfiles ?? false,
+              showNeoForgeProfiles:
+                  filterSettings.showNeoForgeProfiles ?? false,
+              showQuiltProfiles: filterSettings.showQuiltProfiles ?? false,
+              showLiteLoaderProfiles:
+                  filterSettings.showLiteLoaderProfiles ?? false,
               onReleasesChanged: (value) {
-                setState(() {
-                  showReleases = value;
-                });
+                filterNotifier.updateFilterValue('showReleases', value);
               },
               onSnapshotsChanged: (value) {
-                setState(() {
-                  showSnapshots = value;
-                });
+                filterNotifier.updateFilterValue('showSnapshots', value);
               },
               onOldVersionsChanged: (value) {
-                setState(() {
-                  showOldVersions = value;
-                });
+                filterNotifier.updateFilterValue('showOldVersions', value);
+              },
+              onModProfilesChanged: (value) {
+                filterNotifier.updateFilterValue('showModProfiles', value);
+              },
+              onVanillaProfilesChanged: (value) {
+                filterNotifier.updateFilterValue('showVanillaProfiles', value);
+              },
+              onFabricProfilesChanged: (value) {
+                filterNotifier.updateFilterValue('showFabricProfiles', value);
+              },
+              onForgeProfilesChanged: (value) {
+                filterNotifier.updateFilterValue('showForgeProfiles', value);
+              },
+              onNeoForgeProfilesChanged: (value) {
+                filterNotifier.updateFilterValue('showNeoForgeProfiles', value);
+              },
+              onQuiltProfilesChanged: (value) {
+                filterNotifier.updateFilterValue('showQuiltProfiles', value);
+              },
+              onLiteLoaderProfilesChanged: (value) {
+                filterNotifier.updateFilterValue(
+                  'showLiteLoaderProfiles',
+                  value,
+                );
               },
             ),
           ),

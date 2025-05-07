@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:karasu_launcher/services/auth/auth_events.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth/account.dart';
 import '../models/auth/device_code_response.dart';
@@ -23,13 +24,17 @@ class AuthenticationState {
   final String? activeMicrosoftAccountId;
   final bool isInitialized;
   final bool isRefreshing;
+  final String? _message;
 
   const AuthenticationState({
     this.accounts = const {},
     this.activeMicrosoftAccountId,
     this.isInitialized = false,
     this.isRefreshing = false,
-  });
+    String? message,
+  }) : _message = message;
+
+  String? get message => _message;
 
   Account? get activeAccount {
     try {
@@ -44,12 +49,12 @@ class AuthenticationState {
   }
 
   bool get isAuthenticated => activeAccount?.hasValidMinecraftToken ?? false;
-
   AuthenticationState copyWith({
     Map<String, Account>? accounts,
     String? activeMicrosoftAccountId,
     bool? isInitialized,
     bool? isRefreshing,
+    String? message,
   }) {
     return AuthenticationState(
       accounts: accounts ?? this.accounts,
@@ -57,6 +62,7 @@ class AuthenticationState {
           activeMicrosoftAccountId ?? this.activeMicrosoftAccountId,
       isInitialized: isInitialized ?? this.isInitialized,
       isRefreshing: isRefreshing ?? this.isRefreshing,
+      message: message ?? _message,
     );
   }
 }
@@ -66,9 +72,53 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
   static const String _activeAccountKey = 'active_account';
 
   final AuthenticationService _authService = AuthenticationService();
+  Function(String)? updateMessage;
+  Function(AuthEvent?)? authEvent;
 
   AuthenticationNotifier() : super(const AuthenticationState()) {
     _init();
+    _setupServiceCallbacks();
+  }
+
+  /// 認証イベントを受け取るコールバックを設定する
+  void setAuthEventCallback(Function(AuthEvent?) callback) {
+    authEvent = callback;
+  }
+
+  /// 認証イベントを受け取るコールバックを削除する
+  void removeAuthEventCallback() {
+    authEvent = null;
+  }
+
+  /// 認証イベントを通知する
+  void notifyAuthEvent(AuthEventType type, [Map<String, dynamic>? data]) {
+    if (authEvent != null) {
+      authEvent!(AuthEvent(type, data));
+    }
+  }
+
+  void _setupServiceCallbacks() {
+    _authService.setLogCallback((message, {eventType}) {
+      state = state.copyWith(message: message);
+
+      if (updateMessage != null) {
+        updateMessage!(message);
+      }
+
+      if (authEvent != null) {
+        if (eventType != null) {
+          authEvent!(AuthEvent(eventType));
+        }
+      }
+    });
+  }
+
+  void setStateMessage(String message) {
+    state = state.copyWith(message: message);
+
+    if (updateMessage != null) {
+      updateMessage!(message);
+    }
   }
 
   Future<void> init() async {
@@ -317,15 +367,18 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
     String? refreshToken,
   }) async {
     try {
+      setStateMessage('Microsoftでの認証を開始しています...');
       final msTokenResponse =
           deviceCode != null
               ? await _authService.pollForMicrosoftToken(deviceCode)
               : await _authService.refreshMicrosoftToken(refreshToken!);
 
+      setStateMessage('Xbox Liveでの認証を開始しています...');
       final xboxLiveResponse = await _authService.authenticateWithXboxLive(
         msTokenResponse.accessToken,
       );
 
+      setStateMessage('XSTSトークンを取得しています...');
       final xstsResponse = await _authService.getXstsToken(
         xboxLiveResponse.token,
       );
@@ -333,6 +386,7 @@ class AuthenticationNotifier extends StateNotifier<AuthenticationState> {
       final microsoftAccountId = xboxLiveResponse.displayClaims.xui[0].uhs;
 
       final xuid = xboxLiveResponse.displayClaims.xui[0].uhs;
+      setStateMessage('Microsoft/Xboxの認証が完了しました');
       debugPrint('Retrieved Microsoft account ID (UHS): $microsoftAccountId');
       debugPrint('Retrieved Xbox XUID: $xuid');
 

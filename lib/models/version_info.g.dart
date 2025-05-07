@@ -39,6 +39,7 @@ VersionInfo _$VersionInfoFromJson(Map<String, dynamic> json) => VersionInfo(
   releaseTime: VersionInfo._dateTimeFromString(json['releaseTime'] as String?),
   time: VersionInfo._dateTimeFromString(json['time'] as String?),
   type: json['type'] as String?,
+  inheritsFrom: json['inheritsFrom'] as String?,
 );
 
 Map<String, dynamic> _$VersionInfoToJson(VersionInfo instance) =>
@@ -57,6 +58,7 @@ Map<String, dynamic> _$VersionInfoToJson(VersionInfo instance) =>
       'releaseTime': VersionInfo._dateTimeToString(instance.releaseTime),
       'time': VersionInfo._dateTimeToString(instance.time),
       'type': instance.type,
+      'inheritsFrom': instance.inheritsFrom,
     };
 
 Arguments _$ArgumentsFromJson(Map<String, dynamic> json) => Arguments(
@@ -135,7 +137,7 @@ Map<String, dynamic> _$RulesToJson(Rules instance) => <String, dynamic>{
   'os': instance.os,
 };
 
-const _$ActionEnumMap = {Action.allow: 'allow'};
+const _$ActionEnumMap = {Action.allow: 'allow', Action.disallow: 'disallow'};
 
 Os _$OsFromJson(Map<String, dynamic> json) => Os(
   name: $enumDecodeNullable(_$NameEnumMap, json['name']),

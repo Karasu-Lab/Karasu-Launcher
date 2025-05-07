@@ -1,4 +1,8 @@
 {
+    "javaPathSelector": {
+        "selectJavaHome": "请选择Java主目录",
+        "dialogTitle": "选择Java主目录"
+    },
     "homePage": {
         "tabs": {
             "play": "游戏",
@@ -9,7 +13,8 @@
         "button": {
             "launch": "启动 {name}",
             "selectProfile": "请选择配置文件",
-            "launchInDifferentInstance": "在不同实例中启动"
+            "launchInDifferentInstance": "在不同实例中启动",
+            "alreadyRunning": "正在启动"
         },
         "warning": {
             "title": "警告",
@@ -89,9 +94,6 @@
         "save": "保存",
         "requiredFields": "配置文件名称和版本是必填项",
         "version": "版本",
-        "showReleases": "显示正式版",
-        "showSnapshots": "显示快照版",
-        "showOldVersions": "显示旧版本",
         "latestRelease": "最新正式版",
         "latestSnapshot": "最新快照版",
         "noVersionsAvailable": "没有可用的版本",
@@ -110,7 +112,8 @@
         "editTooltip": "编辑此配置文件",
         "cannotEditTooltip": "您无法编辑此配置文件",
         "deleteTooltip": "删除此配置文件",
-        "cannotDeleteTooltip": "您无法删除此配置文件"
+        "cannotDeleteTooltip": "您无法删除此配置文件",
+        "cannotDeleteRunningTooltip": "无法删除正在运行的配置文件"
     },
     "profileFilter": {
         "showReleases": "显示发行版",
@@ -214,6 +217,56 @@
         "close": "关闭",
         "title": "Xbox账户"
     },
+    "log": {
+        "auth": {
+            "microsoft": {
+                "requesting_device_code": "请求Microsoft设备代码",
+                "device_code_obtained": "已获取设备代码",
+                "starting_token_polling": "开始Microsoft令牌轮询",
+                "polling_for_authorization": "正在轮询令牌授权",
+                "authorization_successful": "Microsoft授权成功",
+                "authorization_pending": "授权等待中",
+                "device_code_expired": "设备代码已过期",
+                "refreshing_token": "正在刷新Microsoft令牌",
+                "token_refreshed": "Microsoft令牌已刷新",
+                "refresh_token_cached": "Microsoft刷新令牌已缓存",
+                "using_cached_refresh_token": "使用缓存的Microsoft刷新令牌",
+                "no_cached_refresh_token": "没有缓存的Microsoft刷新令牌"
+            },
+            "xbox": {
+                "live_authentication": "Xbox Live认证",
+                "getting_profile": "获取Xbox个人资料",
+                "getting_xsts_token": "获取XSTS令牌",
+                "uhs_info": "UHS信息",
+                "xsts_token_info": "XSTS令牌信息",
+                "extracted_xuid": "已提取XUID",
+                "failed_to_extract_xuid": "提取XUID失败",
+                "token_cached": "Xbox令牌已缓存",
+                "using_cached_token": "使用缓存的Xbox令牌",
+                "cached_token_invalid": "缓存的Xbox令牌无效"
+            },
+            "minecraft": {
+                "checking_ownership": "检查Minecraft所有权",
+                "ownership_check_response": "所有权检查响应",
+                "ownership_data": "所有权数据",
+                "no_items_in_entitlement": "授权中没有项目",
+                "ownership_check_error": "所有权检查错误",
+                "ownership_check_exception": "所有权检查异常",
+                "calling_profile_api": "调用Minecraft个人资料API",
+                "profile_api_response": "个人资料API响应",
+                "profile_data": "已获取个人资料数据",
+                "profile_retrieval_error": "获取个人资料错误",
+                "profile_retrieval_exception": "获取个人资料异常",
+                "using_cached_token": "使用缓存的Minecraft令牌",
+                "cached_token_invalid": "缓存的Minecraft令牌无效"
+            },
+            "common": {
+                "token_cached": "令牌已缓存",
+                "using_cached_token": "使用缓存的令牌",
+                "token_cache_cleared": "令牌缓存已清除"
+            }
+        }
+    },
     "profileList": {
         "noMatchingProfiles": "没有与筛选条件匹配的配置文件",
         "sortOptions": {
@@ -288,7 +341,8 @@
         "readme": "README",
         "links": {
             "github": "GitHub",
-            "twitter": "Twitter"
+            "twitter": "Twitter",
+            "license": "Licence"
         }
     },
     "settingsPage": {
@@ -297,6 +351,11 @@
         "language": "语言设置",
         "dataManagement": "数据管理",
         "others": "其他",
+        "java": "Java设置",
+        "javaPath": {
+            "title": "Java运行环境路径",
+            "description": "设置用于运行Minecraft的Java路径。"
+        },
         "appDirectory": {
             "title": "应用程序数据目录",
             "copied": "路径已复制到剪贴板",
@@ -344,7 +403,8 @@
             "confirmButton": "确定"
         },
         "errors": {
-            "filesInUse": "某些文件（{count}个）无法删除，因为它们正在使用中。尝试关闭其他应用程序，然后重试。"
+            "filesInUse": "某些文件（{count}个）无法删除，因为它们正在使用中。尝试关闭其他应用程序，然后重试。",
+            "failed_to_load_data": "加载数据时发生错误: {error}"
         }
     }
 }

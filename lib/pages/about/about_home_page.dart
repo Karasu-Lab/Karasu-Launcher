@@ -5,6 +5,7 @@ import 'package:icons_plus/icons_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:karasu_launcher/providers/locale_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -157,31 +158,73 @@ class _AboutHomePageState extends ConsumerState<AboutHomePage> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildLinkButton(
-                        context,
-                        icon: BoxIcons.bxl_github,
-                        label: FlutterI18n.translate(
-                          context,
-                          'aboutPage.links.github',
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.3,
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: _buildLinkButton(
+                                context,
+                                icon: BoxIcons.bxl_github,
+                                label: FlutterI18n.translate(
+                                  context,
+                                  'aboutPage.links.github',
+                                ),
+                                route: '/about/github',
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: _buildLinkButton(
+                                context,
+                                icon: BoxIcons.bxl_twitter,
+                                label: FlutterI18n.translate(
+                                  context,
+                                  'aboutPage.links.twitter',
+                                ),
+                                route: '/about/twitter',
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
                         ),
-                        route: '/about/github',
-                        color: Colors.black87,
-                      ),
-                      const SizedBox(width: 20),
-                      _buildLinkButton(
-                        context,
-                        icon: BoxIcons.bxl_twitter,
-                        label: FlutterI18n.translate(
-                          context,
-                          'aboutPage.links.twitter',
+                        const SizedBox(height: 15),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: 180,
+                                ),
+                                child: SizedBox(
+                                  child: ElevatedButton.icon(
+                                    onPressed:
+                                        () => context.go('/about/license'),
+                                    icon: const Icon(Icons.info_outline),
+                                    label: Text(
+                                      FlutterI18n.translate(
+                                        context,
+                                        'aboutPage.links.license',
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.teal,
+                                      foregroundColor: Colors.white,
+                                      textStyle: const TextStyle(fontSize: 16),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        route: '/about/twitter',
-                        color: Colors.blue,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               );

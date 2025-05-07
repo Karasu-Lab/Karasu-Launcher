@@ -13,13 +13,39 @@ import 'download_utils.dart';
 /// バージョンマニフェストを取得する
 Future<LauncherVersionsV2> fetchVersionManifest() async {
   try {
+    // オンラインのマニフェストを取得
     final response = await http.get(Uri.parse(MINECRAFT_VERSION_MANIFEST_URL));
 
     if (response.statusCode != 200) {
       throw Exception('Failed to get version manifest: ${response.statusCode}');
     }
 
-    return LauncherVersionsV2.fromJson(json.decode(response.body));
+    final manifest = LauncherVersionsV2.fromJson(json.decode(response.body));
+
+    // ローカルのバージョンを取得
+    final localVersions = await loadLocalVersions();
+    final onlineVersionIds = manifest.versions.map((v) => v.id).toSet();
+
+    // オンラインに存在しないローカルバージョンを追加
+    for (final localVersion in localVersions) {
+      if (!onlineVersionIds.contains(localVersion.id)) {
+        manifest.versions.add(
+          MinecraftVersion(
+            id: localVersion.id,
+            type: localVersion.type,
+            url: '', // ローカルバージョンのため、URLは不要
+            time: DateTime.now().toIso8601String(), // 正確な時間は不明なため、現在時刻を使用
+            releaseTime: DateTime.now().toIso8601String(),
+            sha1: '', // ローカルバージョンのため、SHA1は不要
+            complianceLevel: 0,
+            modLoader: localVersion.modLoader,
+          ),
+        );
+        debugPrint('ローカルバージョンを追加: ${localVersion.id}');
+      }
+    }
+
+    return manifest;
   } catch (e) {
     throw Exception('Failed to parse version manifest: $e');
   }
@@ -130,6 +156,7 @@ Future<VersionInfo> fetchModVersionInfo(String versionId) async {
       logging: baseVersionInfo.logging,
       arguments: modVersionInfo.arguments ?? baseVersionInfo.arguments,
       complianceLevel: baseVersionInfo.complianceLevel,
+      inheritsFrom: modVersionInfo.inheritsFrom,
     );
 
     return combinedVersionInfo;
@@ -147,6 +174,23 @@ Future<File> downloadClientJar(VersionInfo versionInfo) async {
   // すでにJARファイルが存在する場合はそれを返す
   if (await clientJarFile.exists()) {
     return clientJarFile;
+  }
+
+  // Forgeモッドの場合は、クライアントJARが存在しなくてもスキップする
+  final jsonPath = await getVersionJsonPath(versionId);
+  final jsonFile = File(jsonPath);
+  if (await jsonFile.exists()) {
+    try {
+      final content = await jsonFile.readAsString();
+      final jsonData = json.decode(content) as Map<String, dynamic>;
+      final modLoader = ModLoader.fromJsonContent(jsonData, versionId);
+      if (modLoader?.type == 'forge') {
+        debugPrint('Forgeモッドのため、クライアントJARのダウンロードをスキップします: $versionId');
+        return clientJarFile; // 空のファイルを返す
+      }
+    } catch (e) {
+      debugPrint('MODローダー情報の読み込みに失敗しました: $e');
+    }
   }
 
   // MODローダーの場合、downloads情報はベースバージョンから取得される

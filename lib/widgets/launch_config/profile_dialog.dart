@@ -236,7 +236,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
                   },
                 ),
                 Text(
-                  FlutterI18n.translate(context, 'profileDialog.showReleases'),
+                  FlutterI18n.translate(context, 'profileFilter.showReleases'),
                 ),
                 const SizedBox(width: 20),
                 Checkbox(
@@ -248,7 +248,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
                   },
                 ),
                 Text(
-                  FlutterI18n.translate(context, 'profileDialog.showSnapshots'),
+                  FlutterI18n.translate(context, 'profileFilter.showSnapshots'),
                 ),
                 const SizedBox(width: 20),
                 Checkbox(
@@ -262,7 +262,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
                 Text(
                   FlutterI18n.translate(
                     context,
-                    'profileDialog.showOldVersions',
+                    'profileFilter.showOldVersions',
                   ),
                 ),
               ],

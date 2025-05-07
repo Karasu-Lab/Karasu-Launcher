@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:karasu_launcher/models/auth/account.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/models/version_info.dart';
+import 'package:karasu_launcher/providers/java_provider.dart';
 import 'package:karasu_launcher/utils/minecraft_utils.dart';
 
 /// ベースランチャークラス
@@ -27,9 +28,11 @@ abstract class BaseLauncher<T extends BaseLauncher<T>>
     LaunchMinecraftCallback? onMinecraftLaunch,
     Account? account,
     String? offlinePlayerName,
+    JavaProvider? javaProvider,
   });
 
   /// 必要なMinecraftファイルをダウンロードする
+  @override
   Future<void> downloadRequiredMinecraftFiles(
     String versionId, {
     ProgressCallback? onAssetsProgress,
@@ -52,6 +55,8 @@ abstract class BaseLauncher<T extends BaseLauncher<T>>
     String versionId, {
     ProgressCallback? onProgress,
   });
+
+  Future<String> buildClasspath(VersionInfo versionInfo, String versionId);
 
   /// Minecraftの全てのファイルをダウンロードする
   @override
@@ -96,4 +101,9 @@ abstract class BaseLauncher<T extends BaseLauncher<T>>
     Account? account,
     String? offlinePlayerName,
   });
+
+  Profile? getProfile();
+  Future<VersionInfo?> getVersionInfo();
+  Future<String> getMainClass();
+  Map<String, (String, String)> getClassPathMap();
 }

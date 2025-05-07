@@ -157,7 +157,7 @@ class CustomProfileList extends ConsumerWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 300,
-        childAspectRatio: 1.2,
+        childAspectRatio: 1.8,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -187,9 +187,7 @@ class CustomProfileList extends ConsumerWidget {
             );
 
             final item = mutableProfiles[oldIndex];
-
             mutableProfiles.removeAt(oldIndex);
-
             int insertPosition = newIndex;
 
             if (insertPosition >= mutableProfiles.length) {
@@ -214,7 +212,7 @@ class CustomProfileList extends ConsumerWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 300,
-        childAspectRatio: 1.2,
+        childAspectRatio: 1.8,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),

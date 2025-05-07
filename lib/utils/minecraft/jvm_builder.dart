@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:karasu_launcher/models/java_runtime.dart';
 import 'package:karasu_launcher/models/version_info.dart';
 import 'package:path/path.dart' as p;
 
@@ -279,18 +278,89 @@ class JvmArgsBuilder {
     _additionalArgs.add(processedArg);
     return this;
   }
-
   /// クラスパスにディレクトリまたはjarファイルを追加
   JvmArgsBuilder addClasspath(String path) {
+    // 空または無効なパスの場合は追加しない
+    if (path.isEmpty) {
+      debugPrint('空のパスはクラスパスに追加しません');
+      return this;
+    }
+
+    // 環境変数の内容が誤って含まれていないか確認
+    // PATHセパレータが複数含まれている場合は環境変数の可能性がある
+    final pathSeparator = Platform.isWindows ? ';' : ':';
+    if (path.contains(pathSeparator)) {
+      debugPrint('警告: クラスパスに複数のパスセパレータが含まれています。個別のパスに分割します。');
+      // パスセパレータで分割する前に、引用符で囲まれた部分を一時的に置換して保護
+      final protectedPath = _protectQuotedPaths(path);
+      // 個別のパスに分割して再帰的に追加
+      final paths = _splitPreservingQuotedPaths(protectedPath, pathSeparator);
+      return addClasspaths(paths.where((p) => p.isNotEmpty));
+    }
+    
+    // パスに引用符が含まれている場合、引用符を削除
+    String cleanPath = path;
+    if (path.startsWith('"') && path.endsWith('"')) {
+      cleanPath = path.substring(1, path.length - 1);
+    }
+    
     // Windowsの場合、パスをノーマライズする
     if (Platform.isWindows) {
       // バックスラッシュをスラッシュに変換し、重複するスラッシュを削除
-      final normalizedPath = path.replaceAll('\\', '/').replaceAll('//', '/');
+      final normalizedPath = cleanPath.replaceAll('\\', '/').replaceAll('//', '/');
       _classpaths.add(normalizedPath);
     } else {
-      _classpaths.add(path);
+      _classpaths.add(cleanPath);
     }
     return this;
+  }
+
+  /// 引用符で囲まれたパスを一時的に保護するためのメソッド
+  String _protectQuotedPaths(String originalPath) {
+    // 引用符で囲まれた部分を一時的なプレースホルダーに置換
+    RegExp regex = RegExp(r'"([^"]*)"');
+    String result = originalPath;
+    int count = 0;
+
+    // 引用符で囲まれた各パスを特殊なプレースホルダーに置き換え
+    result = result.replaceAllMapped(regex, (Match match) {
+      final quotedPath = match.group(1)!;
+      final placeholder = '##QUOTED_PATH_${count++}##';
+      _placeholders[placeholder] = quotedPath;
+      return placeholder;
+    });
+
+    return result;
+  }
+
+  /// パスセパレータで分割する際に引用符で囲まれたパスを保護する
+  List<String> _splitPreservingQuotedPaths(
+    String protectedPath,
+    String separator,
+  ) {
+    // セパレータで分割
+    List<String> parts = protectedPath.split(separator);
+
+    // 各部分のプレースホルダーを元の引用符付きパスに戻す
+    for (int i = 0; i < parts.length; i++) {
+      String part = parts[i];
+      // プレースホルダーパターンを検出
+      RegExp placeholderPattern = RegExp(r'##QUOTED_PATH_(\d+)##');
+
+      if (placeholderPattern.hasMatch(part)) {
+        parts[i] = part.replaceAllMapped(placeholderPattern, (Match match) {
+          final placeholder = match.group(0)!;
+          // プレースホルダーから元のパスを取得
+          final originalPath = _placeholders[placeholder];
+          // プレースホルダーをクリーンアップ
+          _placeholders.remove(placeholder);
+          // 引用符で囲まれたパスを返す
+          return '"$originalPath"';
+        });
+      }
+    }
+
+    return parts;
   }
 
   /// 認証情報が設定されているかどうかを確認する

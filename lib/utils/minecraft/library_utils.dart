@@ -5,6 +5,7 @@ import 'package:karasu_launcher/models/mod_loader.dart';
 import 'package:karasu_launcher/models/version_info.dart';
 import 'package:karasu_launcher/utils/maven_repo_downloader.dart';
 import 'package:path/path.dart' as p;
+import 'package:pub_semver/pub_semver.dart';
 import '../file_utils.dart';
 import 'constants.dart';
 import 'download_utils.dart';
@@ -234,40 +235,14 @@ void _addToLibraryMap(
   }
 }
 
-/// バージョン文字列を比較する簡易的な関数
-/// 正の数: a > b、ゼロ: a = b、負の数: a < b
+/// バージョン文字列を比較する関数
 int _compareVersions(String a, String b) {
   try {
-    // 数値部分とプレリリース部分を分離
-    final aMain = a.split('-')[0];
-    final bMain = b.split('-')[0];
+    final versionA = Version.parse(a);
+    final versionB = Version.parse(b);
 
-    final aParts = aMain.split('.').map(int.parse).toList();
-    final bParts = bMain.split('.').map(int.parse).toList();
-
-    // パート数を揃える
-    while (aParts.length < bParts.length) aParts.add(0);
-    while (bParts.length < aParts.length) bParts.add(0);
-
-    // 部分ごとに比較
-    for (int i = 0; i < aParts.length; i++) {
-      final comp = aParts[i].compareTo(bParts[i]);
-      if (comp != 0) return comp;
-    }
-
-    // メインバージョンが同じ場合、プレリリースタグを考慮
-    if (a.contains('-') && !b.contains('-')) return -1; // プレリリースより正式版が優先
-    if (!a.contains('-') && b.contains('-')) return 1;
-
-    // どちらもプレリリースの場合、単純に文字列比較（完全ではない）
-    if (a.contains('-') && b.contains('-')) {
-      return a.compareTo(b);
-    }
-
-    return 0; // 同等のバージョン
+    return versionA.compareTo(versionB);
   } catch (e) {
-    // 解析できない場合は単純に文字列比較
-    debugPrint('バージョン比較エラー: $a vs $b - $e');
     return a.compareTo(b);
   }
 }

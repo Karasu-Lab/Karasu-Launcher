@@ -8,62 +8,219 @@ class ProfileFilter extends StatelessWidget {
   final bool showReleases;
   final bool showSnapshots;
   final bool showOldVersions;
+  final bool showModProfiles;
+  final bool showVanillaProfiles;
+
+  final bool showFabricProfiles;
+  final bool showForgeProfiles;
+  final bool showNeoForgeProfiles;
+  final bool showQuiltProfiles;
+  final bool showLiteLoaderProfiles;
   final ValueChanged<bool> onReleasesChanged;
   final ValueChanged<bool> onSnapshotsChanged;
   final ValueChanged<bool> onOldVersionsChanged;
+  final ValueChanged<bool>? onModProfilesChanged;
+  final ValueChanged<bool>? onVanillaProfilesChanged;
+
+  final ValueChanged<bool>? onFabricProfilesChanged;
+  final ValueChanged<bool>? onForgeProfilesChanged;
+  final ValueChanged<bool>? onNeoForgeProfilesChanged;
+  final ValueChanged<bool>? onQuiltProfilesChanged;
+  final ValueChanged<bool>? onLiteLoaderProfilesChanged;
 
   const ProfileFilter({
     super.key,
     required this.showReleases,
     required this.showSnapshots,
     required this.showOldVersions,
+    this.showModProfiles = false,
+    this.showVanillaProfiles = true,
+    this.showFabricProfiles = false,
+    this.showForgeProfiles = false,
+    this.showNeoForgeProfiles = false,
+    this.showQuiltProfiles = false,
+    this.showLiteLoaderProfiles = false,
     required this.onReleasesChanged,
     required this.onSnapshotsChanged,
     required this.onOldVersionsChanged,
+    this.onModProfilesChanged,
+    this.onVanillaProfilesChanged,
+    this.onFabricProfilesChanged,
+    this.onForgeProfilesChanged,
+    this.onNeoForgeProfilesChanged,
+    this.onQuiltProfilesChanged,
+    this.onLiteLoaderProfilesChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 20,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildCheckbox(
-          value: showReleases,
-          onChanged: onReleasesChanged,
-          label: FlutterI18n.translate(context, 'profileFilter.showReleases'),
+        Wrap(
+          spacing: 8.0,
+          runSpacing: 4.0,
+          children: [
+            FilterChip(
+              label: Text(
+                FlutterI18n.translate(context, 'profileFilter.showReleases'),
+              ),
+              selected: showReleases,
+              onSelected: _handleReleasesChanged,
+            ),
+            FilterChip(
+              label: Text(
+                FlutterI18n.translate(context, 'profileFilter.showSnapshots'),
+              ),
+              selected: showSnapshots,
+              onSelected: _handleSnapshotsChanged,
+            ),
+            FilterChip(
+              label: Text(
+                FlutterI18n.translate(context, 'profileFilter.showOldVersions'),
+              ),
+              selected: showOldVersions,
+              onSelected: onOldVersionsChanged,
+            ),
+            if (onModProfilesChanged != null)
+              FilterChip(
+                label: Text(
+                  FlutterI18n.translate(
+                    context,
+                    'profileFilter.showModProfiles',
+                  ),
+                ),
+                selected: showModProfiles,
+                onSelected: _handleModProfilesChanged,
+              ),
+            if (onVanillaProfilesChanged != null)
+              FilterChip(
+                label: Text(
+                  FlutterI18n.translate(
+                    context,
+                    'profileFilter.showVanillaProfiles',
+                  ),
+                ),
+                selected: showVanillaProfiles,
+                onSelected: _handleVanillaProfilesChanged,
+              ),
+          ],
         ),
-        _buildCheckbox(
-          value: showSnapshots,
-          onChanged: onSnapshotsChanged,
-          label: FlutterI18n.translate(context, 'profileFilter.showSnapshots'),
-        ),
-        _buildCheckbox(
-          value: showOldVersions,
-          onChanged: onOldVersionsChanged,
-          label: FlutterI18n.translate(
-            context,
-            'profileFilter.showOldVersions',
+        if (showModProfiles && onModProfilesChanged != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: [
+                if (onFabricProfilesChanged != null)
+                  FilterChip(
+                    label: const Text("Fabric"),
+                    selected: showFabricProfiles,
+                    onSelected: onFabricProfilesChanged,
+                  ),
+                if (onForgeProfilesChanged != null)
+                  FilterChip(
+                    label: const Text("Forge"),
+                    selected: showForgeProfiles,
+                    onSelected: onForgeProfilesChanged,
+                  ),
+                if (onNeoForgeProfilesChanged != null)
+                  FilterChip(
+                    label: const Text("NeoForge"),
+                    selected: showNeoForgeProfiles,
+                    onSelected: onNeoForgeProfilesChanged,
+                  ),
+                if (onQuiltProfilesChanged != null)
+                  FilterChip(
+                    label: const Text("Quilt"),
+                    selected: showQuiltProfiles,
+                    onSelected: onQuiltProfilesChanged,
+                  ),
+                if (onLiteLoaderProfilesChanged != null)
+                  FilterChip(
+                    label: const Text("LiteLoader"),
+                    selected: showLiteLoaderProfiles,
+                    onSelected: onLiteLoaderProfilesChanged,
+                  ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
 
-  Widget _buildCheckbox({
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    required String label,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Checkbox(
-          value: value,
-          onChanged: (newValue) => onChanged(newValue ?? value),
-        ),
-        Text(label),
-      ],
-    );
+  void _handleReleasesChanged(bool value) {
+    onReleasesChanged(value);
+
+    if (value && onVanillaProfilesChanged != null && !showVanillaProfiles) {
+      onVanillaProfilesChanged!(true);
+    }
+
+    if (!value &&
+        !showSnapshots &&
+        onVanillaProfilesChanged != null &&
+        showVanillaProfiles) {
+      onVanillaProfilesChanged!(false);
+    }
+  }
+
+  void _handleSnapshotsChanged(bool value) {
+    onSnapshotsChanged(value);
+
+    if (value && onVanillaProfilesChanged != null && !showVanillaProfiles) {
+      onVanillaProfilesChanged!(true);
+    }
+
+    if (!value &&
+        !showReleases &&
+        onVanillaProfilesChanged != null &&
+        showVanillaProfiles) {
+      onVanillaProfilesChanged!(false);
+    }
+  }
+
+  void _handleVanillaProfilesChanged(bool value) {
+    if (onVanillaProfilesChanged != null) {
+      onVanillaProfilesChanged!(value);
+
+      if (value && !showReleases) {
+        onReleasesChanged(true);
+      }
+
+      if (!value) {
+        if (showReleases) onReleasesChanged(false);
+        if (showSnapshots) onSnapshotsChanged(false);
+      }
+    }
+  }
+
+  void _handleModProfilesChanged(bool value) {
+    if (onModProfilesChanged != null) {
+      onModProfilesChanged!(value);
+
+      if (!value) {
+        _resetAllLoaderFilters();
+      }
+    }
+  }
+
+  void _resetAllLoaderFilters() {
+    if (onFabricProfilesChanged != null && showFabricProfiles) {
+      onFabricProfilesChanged!(false);
+    }
+    if (onForgeProfilesChanged != null && showForgeProfiles) {
+      onForgeProfilesChanged!(false);
+    }
+    if (onNeoForgeProfilesChanged != null && showNeoForgeProfiles) {
+      onNeoForgeProfilesChanged!(false);
+    }
+    if (onQuiltProfilesChanged != null && showQuiltProfiles) {
+      onQuiltProfilesChanged!(false);
+    }
+    if (onLiteLoaderProfilesChanged != null && showLiteLoaderProfiles) {
+      onLiteLoaderProfilesChanged!(false);
+    }
   }
 }
 

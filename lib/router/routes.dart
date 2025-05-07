@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:karasu_launcher/pages/about/about_home_page.dart';
+import 'package:karasu_launcher/pages/about/about_license_page.dart';
 import 'package:karasu_launcher/pages/mod/curseforge_page.dart';
 import 'package:karasu_launcher/pages/mod/mod_page.dart';
 import 'package:karasu_launcher/pages/mod/modrinth_page.dart';

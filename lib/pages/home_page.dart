@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:karasu_launcher/providers/minecraft_state_provider.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
-import 'package:karasu_launcher/services/minecraft_service.dart';
 import 'package:karasu_launcher/widgets/tab.dart';
 import 'package:karasu_launcher/pages/home/play_tab.dart';
 import 'package:karasu_launcher/pages/home/launch_config_tab.dart';
 import 'package:karasu_launcher/pages/home/patch_notes_tab.dart';
 import 'package:karasu_launcher/pages/home/log_tab.dart';
-import 'package:karasu_launcher/providers/authentication_provider.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:karasu_launcher/widgets/launch_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -98,14 +96,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final minecraftState = ref.watch(minecraftStateProvider);
-    final minecraftStateNotifier = ref.watch(minecraftStateProvider.notifier);
-    final minecraftService = ref.read(minecraftServiceProvider);
-
-    final profilesData = ref.watch(profilesProvider);
-    final selectedProfileId = ref.watch(selectedProfileProvider);
-    final activeAccount = ref.watch(activeAccountProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -145,168 +135,33 @@ class _HomePageState extends ConsumerState<HomePage> {
               ],
             ),
             child: Center(
-              child: SizedBox(
+              child: LaunchWidget(
                 width: MediaQuery.of(context).size.width * 0.4,
                 height: 50,
-                child: ElevatedButton.icon(
-                  onPressed:
-                      minecraftState.isLaunching ||
-                              selectedProfileId == null ||
-                              profilesData == null
-                          ? null
-                          : () async {
-                            final profile =
-                                profilesData.profiles[selectedProfileId];
-                            if (profile != null) {
-                              final profileId =
-                                  profile.id ?? profile.gameDir ?? 'unknown';
-
-                              final userId =
-                                  activeAccount?.id ?? 'offline-user';
-
-                              if (minecraftStateNotifier.isUserLaunchingProfile(
-                                userId,
-                                profileId,
-                              )) {
-                                final shouldLaunch =
-                                    await _showDuplicateProfileWarningDialog();
-                                if (shouldLaunch != true) return;
-                              }
-
-                              await ref
-                                  .read(profilesProvider.notifier)
-                                  .updateProfileLastUsed(selectedProfileId);
-
-                              minecraftStateNotifier.setUserLaunchingProfile(
-                                userId,
-                                profileId,
-                                isOfflineUser: activeAccount == null,
-                              );
-
-                              await minecraftService.launchMinecraftAsService(
-                                profile,
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    FlutterI18n.translate(
-                                      context,
-                                      'homePage.error.profileNotFound',
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                onDuplicateWarning: _showDuplicateProfileWarningDialog,
+                borderRadius: BorderRadius.circular(8.0),
+                containerBackgroundColor: Colors.grey.shade200,
+                activeButtonColor: Colors.green,
+                inactiveButtonColor: Colors.grey.shade400,
+                progressColor: const Color(0xFF2E7D32),
+                buttonElevation: 4.0,
+                allowRelaunching: false,
+                textStyle: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black54,
+                      offset: Offset(1.0, 1.0),
+                      blurRadius: 3.0,
                     ),
-                    elevation: 3.0,
-                  ),
-                  icon: null,
-                  label: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                        ),
-                      ),
-                      if (minecraftState.isLaunching)
-                        Positioned(
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width:
-                              MediaQuery.of(context).size.width *
-                              0.4 *
-                              minecraftState.progressValue.clamp(0.0, 1.0),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2E7D32),
-                              borderRadius: BorderRadius.horizontal(
-                                left: const Radius.circular(8.0),
-                                right:
-                                    minecraftState.progressValue >= 0.99
-                                        ? const Radius.circular(8.0)
-                                        : Radius.zero,
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (!minecraftState.isLaunching)
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color:
-                                  selectedProfileId == null ||
-                                          profilesData == null
-                                      ? Colors.grey
-                                      : Colors.green,
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                          ),
-                        ),
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                selectedProfileId == null ||
-                                        profilesData == null
-                                    ? FlutterI18n.translate(
-                                      context,
-                                      'homePage.button.selectProfile',
-                                    )
-                                    : minecraftState.isLaunching &&
-                                        minecraftState.isGlobalLaunching
-                                    ? minecraftState.progressText
-                                    : FlutterI18n.translate(
-                                      context,
-                                      'homePage.button.launch',
-                                      translationParams: {
-                                        "name":
-                                            profilesData
-                                                .profiles[selectedProfileId]
-                                                ?.name ??
-                                            'Unknown',
-                                      },
-                                    ),
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  shadows: const [
-                                    Shadow(
-                                      color: Colors.black54,
-                                      offset: Offset(1.0, 1.0),
-                                      blurRadius: 3.0,
-                                    ),
-                                    Shadow(
-                                      color: Colors.black38,
-                                      offset: Offset(-1.0, -1.0),
-                                      blurRadius: 3.0,
-                                    ),
-                                  ],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    Shadow(
+                      color: Colors.black38,
+                      offset: Offset(-1.0, -1.0),
+                      blurRadius: 3.0,
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/mixins/logging_mixin.dart';
 import 'package:karasu_launcher/models/launcher_profiles.dart';
 import 'package:karasu_launcher/providers/authentication_provider.dart';
+import 'package:karasu_launcher/providers/java_provider.dart';
 import 'package:karasu_launcher/providers/log_provider.dart';
 import 'package:karasu_launcher/providers/minecraft_state_provider.dart';
 import 'package:karasu_launcher/utils/minecraft/launch/launcher_factory.dart';
@@ -30,6 +31,9 @@ class MinecraftService with LoggingMixin {
 
     notifier.setLaunching(true);
     notifier.updateProgress(0.0, '準備中...');
+    logInfo(
+      'App java path: ${_ref.read(javaProvider).customJavaBinaryPath}',
+    );
     logInfo('Starting Minecraft (Version: ${profile.lastVersionId})');
 
     if (account != null) {
@@ -43,8 +47,8 @@ class MinecraftService with LoggingMixin {
 
     try {
       // 標準ランチャーを使用
-      final launcher = LauncherFactory().getStandardLauncher();
-      
+      final launcher = await LauncherFactory().getLauncherForProfile(profile);
+
       await launcher.launchMinecraft(
         profile,
         onAssetsProgress: notifier.onAssetsProgress,
@@ -57,6 +61,7 @@ class MinecraftService with LoggingMixin {
         onMinecraftLaunch: notifier.onMinecraftLaunch,
         account: account,
         offlinePlayerName: offlinePlayerName,
+        javaProvider: ref.watch(javaProvider),
       );
     } catch (e) {
       logError('An error occurred while launching Minecraft: $e');

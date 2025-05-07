@@ -23,12 +23,16 @@ Future<void> extractNativeLibraries(
   }
 
   final appDir = await createAppDirectory();
-  final librariesDir = p.join(appDir.path, 'libraries');
-  final tempDir = p.join(
-    appDir.path,
-    'temp',
-    'natives-${DateTime.now().millisecondsSinceEpoch}',
+  final librariesDir = p.normalize(p.join(appDir.path, 'libraries'));
+  final tempDir = p.normalize(
+    p.join(
+      appDir.path,
+      'temp',
+      'natives-${DateTime.now().millisecondsSinceEpoch}',
+    ),
   );
+  nativesDir = p.normalize(nativesDir);
+
   await Directory(tempDir).create(recursive: true);
 
   // ネイティブライブラリをフィルタリング
@@ -122,10 +126,21 @@ Future<void> extractNativeLibraries(
         '$artifact-$version-$nativeSuffix.jar',
       );
 
-      final nativeJarFile = File(nativeJarPath);
+      final fallbackJarPath = p.join(
+        librariesDir,
+        group,
+        artifact,
+        version,
+        '$artifact-$version.jar',
+      );
 
-      if (!await nativeJarFile.exists()) {
-        debugPrint('Native library not found: $nativeJarPath');
+      final nativeJarFile = File(nativeJarPath);
+      final fallbackJarFile = File(fallbackJarPath);
+
+      if (!await nativeJarFile.exists() && !await fallbackJarFile.exists()) {
+        debugPrint(
+          'Native library not found at: \n$nativeJarPath\nor\n$fallbackJarPath',
+        );
         processed++;
         if (onProgress != null) {
           onProgress(processed / total, processed, total);
@@ -133,13 +148,15 @@ Future<void> extractNativeLibraries(
         continue;
       }
 
-      debugPrint('Extracting native library: $nativeJarPath');
+      final jarFileToUse =
+          await nativeJarFile.exists() ? nativeJarFile : fallbackJarFile;
+      debugPrint('Extracting native library: ${jarFileToUse.path}');
 
       final tempJarDir = p.join(
         tempDir,
-        p.basenameWithoutExtension(nativeJarPath),
+        p.basenameWithoutExtension(jarFileToUse.path),
       );
-      await extractJar(nativeJarFile.path, tempJarDir);
+      await extractJar(jarFileToUse.path, tempJarDir);
 
       await copyNativeFiles(tempJarDir, nativesDir);
 

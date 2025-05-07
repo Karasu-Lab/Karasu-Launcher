@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:karasu_launcher/providers/profiles_provider.dart';
-import 'package:karasu_launcher/providers/authentication_provider.dart';
-import 'dart:io';
+import 'package:karasu_launcher/providers/loading_provider.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:karasu_launcher/widgets/minecraft_face.dart';
 import 'package:karasu_launcher/widgets/window_buttons.dart';
@@ -17,140 +17,43 @@ class LoadingPage extends ConsumerStatefulWidget {
 }
 
 class _LoadingPageState extends ConsumerState<LoadingPage> {
-  final bool _isLoading = true;
-  String _loadingMessage = '';
-  String? _errorMessage;
-  bool _hasError = false;
-  bool _showMinecraftFace = false;
-  String? _profileName;
-  String? _skinUrl;
-
   final double _iconSize = 150.0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        _loadingMessage = FlutterI18n.translate(
-          context,
-          'loadingPage.initializing',
-        );
-      });
       _initializeApp();
     });
   }
 
-  Future<bool> _checkInternetConnection() async {
-    try {
-      setState(() {
-        _loadingMessage = FlutterI18n.translate(
-          context,
-          'loadingPage.checkingConnection',
-        );
-      });
+  String _translate(String key) {
+    return FlutterI18n.translate(context, key);
+  }
 
-      final result = await InternetAddress.lookup('google.com');
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException catch (e) {
-      if (mounted) {
-        debugPrint(
-          '${FlutterI18n.translate(context, 'loadingPage.noConnection')}: $e',
-        );
-      }
-      return false;
-    } catch (e) {
-      if (mounted) {
-        debugPrint(
-          '${FlutterI18n.translate(context, 'loadingPage.connectionError')}: $e',
-        );
-      }
-      return false;
-    }
+  String _translateWithParams(
+    String key, {
+    Map<String, String>? translationParams,
+  }) {
+    return FlutterI18n.translate(
+      context,
+      key,
+      translationParams: translationParams,
+    );
   }
 
   Future<void> _initializeApp() async {
-    try {
-      setState(() {
-        _loadingMessage = FlutterI18n.translate(
-          context,
-          'loadingPage.loadingProfiles',
-        );
-      });
+    final loadingNotifier = ref.read(loadingProvider.notifier);
 
-      await ref.read(profilesInitializedProvider.future);
+    loadingNotifier.setLoadingMessage(_translate('loadingPage.initializing'));
 
-      final hasInternet = await _checkInternetConnection();
+    await loadingNotifier.initializeApp(_translate, _translateWithParams);
 
-      setState(() {
-        _loadingMessage = FlutterI18n.translate(
-          context,
-          'loadingPage.checkingAuth',
-        );
-      });
-
-      final authNotifier = ref.read(authenticationProvider.notifier);
-
-      if (!hasInternet) {
-        setState(() {
-          _loadingMessage = FlutterI18n.translate(
-            context,
-            'loadingPage.offlineMode',
-          );
-        });
-
-        await authNotifier.clearActiveAccount();
-      }
-
-      if (hasInternet) {
-        await authNotifier.init();
-        var profile = await authNotifier.refreshActiveAccount();
-
-        if (profile != null) {
-          setState(() {
-            _showMinecraftFace = true;
-            _profileName = profile.name;
-            _skinUrl = profile.skinUrl;
-            _loadingMessage = FlutterI18n.translate(
-              context,
-              'loadingPage.loggedInAs',
-              translationParams: {'name': profile.name},
-            );
-          });
-        }
-
-        await Future.delayed(const Duration(seconds: 1));
-      }
-
-      setState(() {
-        _loadingMessage = FlutterI18n.translate(
-          context,
-          'loadingPage.applyingSettings',
-        );
-      });
-
-      await Future.delayed(const Duration(milliseconds: 500));
-    } catch (e) {
-      setState(() {
-        _hasError = true;
-        _errorMessage =
-            '${FlutterI18n.translate(context, 'loadingPage.errorOccurred')}: $e';
-        _loadingMessage = FlutterI18n.translate(
-          context,
-          'loadingPage.initFailed',
-        );
-      });
-      if (mounted) {
-        debugPrint(
-          '${FlutterI18n.translate(context, 'loadingPage.initError')}: $e',
-        );
-      }
-      await Future.delayed(const Duration(seconds: 2));
-    }
+    final loadingState = ref.read(loadingProvider);
 
     if (!mounted) return;
 
-    if (!_hasError) {
+    if (!loadingState.hasError) {
       context.go('/minecraft');
     } else {
       await Future.delayed(const Duration(seconds: 1));
@@ -161,6 +64,8 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loadingState = ref.watch(loadingProvider);
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
@@ -181,30 +86,35 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _showMinecraftFace && _skinUrl != null
-                      ? SizedBox(
-                        width: _iconSize / 1.5,
-                        height: _iconSize / 1.5,
-                        child: MinecraftFace.network(
-                          _skinUrl!,
-                          size: _iconSize / 1.5,
-                          showOverlay: true,
-                        ),
-                      )
-                      : Image.asset(
-                        'assets/images/logo.png',
-                        width: _iconSize,
-                        errorBuilder:
-                            (context, error, stackTrace) => Icon(
-                              Icons.launch,
-                              size: _iconSize * 0.53,
-                              color: Colors.white,
-                            ),
-                      ),
+                  SizedBox(
+                    width: _iconSize,
+                    height: _iconSize,
+                    child: Center(
+                      child:
+                          loadingState.showMinecraftFace &&
+                                  loadingState.skinUrl != null
+                              ? MinecraftFace.network(
+                                loadingState.skinUrl!,
+                                size: _iconSize / 1.5,
+                                showOverlay: true,
+                              )
+                              : Image.asset(
+                                'assets/images/logo.png',
+                                width: _iconSize,
+                                errorBuilder:
+                                    (context, error, stackTrace) => Icon(
+                                      BoxIcons.bx_run,
+                                      size: _iconSize * 0.53,
+                                      color: Colors.white,
+                                    ),
+                              ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   Text(
-                    _showMinecraftFace && _profileName != null
-                        ? _profileName!
+                    loadingState.showMinecraftFace &&
+                            loadingState.profileName != null
+                        ? loadingState.profileName!
                         : 'Karasu Launcher',
                     style: const TextStyle(
                       fontSize: 24,
@@ -216,10 +126,69 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
                   const CircularProgressIndicator(color: Colors.white),
                   const SizedBox(height: 24),
                   Text(
-                    _loadingMessage,
+                    loadingState.loadingMessage,
                     style: const TextStyle(fontSize: 16, color: Colors.white70),
                   ),
                   const SizedBox(height: 8),
+                  if (loadingState.authMessages.isNotEmpty) ...[
+                    Container(
+                      constraints: const BoxConstraints(
+                        maxWidth: 400,
+                        maxHeight: 100,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black45,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Container(
+                        height: 80,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(5, (index) {
+                            final messagesCount =
+                                loadingState.authMessages.length;
+
+                            final displayCount =
+                                messagesCount > 5 ? 5 : messagesCount;
+
+                            if (index >= displayCount) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final messageIndex =
+                                messagesCount - displayCount + index;
+
+                            return Container(
+                              height: 16,
+                              alignment: Alignment.center,
+                              child: Text(
+                                FlutterI18n.translate(
+                                  context,
+                                  loadingState
+                                      .authMessages[messageIndex]
+                                      .type
+                                      .key,
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white60,
+                                ),
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
                   Consumer(
                     builder: (context, ref, child) {
                       final isLoading = ref.watch(profilesLoadingProvider);
@@ -238,10 +207,10 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
                       );
                     },
                   ),
-                  if (_errorMessage != null) ...[
+                  if (loadingState.errorMessage != null) ...[
                     const SizedBox(height: 16),
                     Text(
-                      _errorMessage!,
+                      loadingState.errorMessage!,
                       style: TextStyle(fontSize: 14, color: Colors.red[300]),
                       textAlign: TextAlign.center,
                     ),

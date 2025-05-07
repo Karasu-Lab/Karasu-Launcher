@@ -65,6 +65,13 @@ RouteBase get $mainShellRouteData => StatefulShellRouteData.$route(
           path: '/about',
 
           factory: $AboutBaseRouteExtension._fromState,
+          routes: [
+            GoRouteData.$route(
+              path: 'license',
+
+              factory: $AboutLicenseRouteExtension._fromState,
+            ),
+          ],
         ),
       ],
     ),
@@ -206,6 +213,22 @@ extension $AboutBaseRouteExtension on AboutBaseRoute {
       const AboutBaseRoute();
 
   String get location => GoRouteData.$location('/about');
+
+  void go(BuildContext context) => context.go(location);
+
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  void replace(BuildContext context) => context.replace(location);
+}
+
+extension $AboutLicenseRouteExtension on AboutLicenseRoute {
+  static AboutLicenseRoute _fromState(GoRouterState state) =>
+      const AboutLicenseRoute();
+
+  String get location => GoRouteData.$location('/about/license');
 
   void go(BuildContext context) => context.go(location);
 

@@ -5,6 +5,9 @@ part 'version_info.g.dart';
 enum Action {
   @JsonValue("allow")
   allow,
+
+  @JsonValue("disallow")
+  disallow,
 }
 
 enum Name {
@@ -34,6 +37,7 @@ class VersionInfo {
   @JsonKey(fromJson: _dateTimeFromString, toJson: _dateTimeToString)
   DateTime? time;
   String? type;
+  String? inheritsFrom;
 
   VersionInfo({
     this.arguments,
@@ -50,6 +54,7 @@ class VersionInfo {
     this.releaseTime,
     this.time,
     this.type,
+    this.inheritsFrom
   });
 
   factory VersionInfo.fromJson(Map<String, dynamic> json) =>

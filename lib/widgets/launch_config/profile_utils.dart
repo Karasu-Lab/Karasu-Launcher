@@ -30,18 +30,82 @@ class ProfileUtils {
     return {'default': defaultProfiles, 'custom': customProfiles};
   }
 
+  static bool isModProfile(Profile profile) {
+    if (profile.javaArgs != null &&
+        (profile.javaArgs!.contains('forge') ||
+            profile.javaArgs!.contains('fabric') ||
+            profile.javaArgs!.contains('quilt') ||
+            profile.javaArgs!.contains('liteloader'))) {
+      return true;
+    }
+
+    if (profile.lastVersionId != null) {
+      if (profile.lastVersionId!.contains('forge') ||
+          profile.lastVersionId!.contains('fabric') ||
+          profile.lastVersionId!.contains('quilt') ||
+          profile.lastVersionId!.contains('liteloader')) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   static List<MapEntry<String, Profile>> filterProfiles(
     Map<String, Profile> profiles,
     bool showReleases,
     bool showSnapshots,
-    bool showOldVersions,
-  ) {
+    bool showOldVersions, {
+    bool showModProfiles = true,
+    bool showVanillaProfiles = true,
+    bool showFabricProfiles = false,
+    bool showForgeProfiles = false,
+    bool showNeoForgeProfiles = false,
+    bool showQuiltProfiles = false,
+    bool showLiteLoaderProfiles = false,
+  }) {
     return profiles.entries.where((entry) {
       final profile = entry.value;
+      final isMod = isModProfile(profile);
+
+      if (isMod && !showModProfiles) return false;
+      if (!isMod && !showVanillaProfiles) return false;
+
+      if (isMod) {
+        final versionId = profile.lastVersionId ?? '';
+        final javaArgs = profile.javaArgs ?? '';
+
+        bool isFabric =
+            versionId.contains('fabric') || javaArgs.contains('fabric');
+        bool isForge =
+            versionId.contains('forge') || javaArgs.contains('forge');
+        bool isNeoForge = versionId.contains('neoforge');
+        bool isQuilt = versionId.contains('quilt');
+        bool isLiteLoader =
+            versionId.contains('liteloader') || javaArgs.contains('liteloader');
+
+        bool anyFilterActive =
+            showFabricProfiles ||
+            showForgeProfiles ||
+            showNeoForgeProfiles ||
+            showQuiltProfiles ||
+            showLiteLoaderProfiles;
+
+        if (anyFilterActive) {
+          return (showFabricProfiles && isFabric) ||
+              (showForgeProfiles && isForge) ||
+              (showNeoForgeProfiles && isNeoForge) ||
+              (showQuiltProfiles && isQuilt) ||
+              (showLiteLoaderProfiles && isLiteLoader);
+        }
+
+        return true;
+      }
 
       if (profile.lastVersionId != null) {
-        final isRelease = isReleaseVersion(profile.lastVersionId!);
-        final isSnapshot = isSnapshotVersion(profile.lastVersionId!);
+        final versionId = profile.lastVersionId!;
+        final isRelease = isReleaseVersion(versionId);
+        final isSnapshot = isSnapshotVersion(versionId);
         final isOldVersion = !isRelease && !isSnapshot;
 
         return (isRelease && showReleases) ||

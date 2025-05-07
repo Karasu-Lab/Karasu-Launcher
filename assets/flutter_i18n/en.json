@@ -1,4 +1,8 @@
 {
+    "javaPathSelector": {
+        "selectJavaHome": "Please select Java home directory",
+        "dialogTitle": "Select Java home directory"
+    },
     "homePage": {
         "tabs": {
             "play": "Play",
@@ -9,7 +13,8 @@
         "button": {
             "launch": "Launch {name}",
             "selectProfile": "Please select a profile",
-            "launchInDifferentInstance": "Launch in different instance"
+            "launchInDifferentInstance": "Launch in different instance",
+            "alreadyRunning": "Launching"
         },
         "warning": {
             "title": "Warning",
@@ -89,9 +94,6 @@
         "save": "Save",
         "requiredFields": "Profile name and version are required",
         "version": "Version",
-        "showReleases": "Show Releases",
-        "showSnapshots": "Show Snapshots",
-        "showOldVersions": "Show Old Versions",
         "latestRelease": "Latest Release",
         "latestSnapshot": "Latest Snapshot",
         "noVersionsAvailable": "There are no versions available",
@@ -110,12 +112,15 @@
         "editTooltip": "Edit this profile",
         "cannotEditTooltip": "You cannot edit this profile",
         "deleteTooltip": "Delete this profile",
-        "cannotDeleteTooltip": "You cannot delete this profile"
+        "cannotDeleteTooltip": "You cannot delete this profile",
+        "cannotDeleteRunningTooltip": "You cannot delete this profile while it is running"
     },
     "profileFilter": {
         "showReleases": "Show Releases",
         "showSnapshots": "Show Snapshots",
-        "showOldVersions": "Show Old Versions"
+        "showOldVersions": "Show Old Versions",
+        "showModProfiles": "Show Mod Profiles",
+        "showVanillaProfiles": "Show Vanilla Profiles"
     },
     "profileSortSelector": {
         "customOrder": "Custom order",
@@ -214,6 +219,56 @@
         "close": "Close",
         "title": "Xbox Accounts"
     },
+    "log": {
+        "auth": {
+            "microsoft": {
+                "requesting_device_code": "Requesting Microsoft device code",
+                "device_code_obtained": "Device code obtained",
+                "starting_token_polling": "Starting Microsoft token polling",
+                "polling_for_authorization": "Polling for token authorization",
+                "authorization_successful": "Microsoft authorization successful",
+                "authorization_pending": "Authorization pending",
+                "device_code_expired": "Device code expired",
+                "refreshing_token": "Refreshing Microsoft token",
+                "token_refreshed": "Microsoft token refreshed",
+                "refresh_token_cached": "Microsoft refresh token cached",
+                "using_cached_refresh_token": "Using cached Microsoft refresh token",
+                "no_cached_refresh_token": "No cached Microsoft refresh token"
+            },
+            "xbox": {
+                "live_authentication": "Xbox Live authentication",
+                "getting_profile": "Getting Xbox profile",
+                "getting_xsts_token": "Getting XSTS token",
+                "uhs_info": "UHS information",
+                "xsts_token_info": "XSTS token information",
+                "extracted_xuid": "Extracted XUID",
+                "failed_to_extract_xuid": "Failed to extract XUID",
+                "token_cached": "Xbox token cached",
+                "using_cached_token": "Using cached Xbox token",
+                "cached_token_invalid": "Cached Xbox token invalid"
+            },
+            "minecraft": {
+                "checking_ownership": "Checking Minecraft ownership",
+                "ownership_check_response": "Ownership check response",
+                "ownership_data": "Ownership data",
+                "no_items_in_entitlement": "No items in entitlement",
+                "ownership_check_error": "Ownership check error",
+                "ownership_check_exception": "Ownership check exception",
+                "calling_profile_api": "Calling Minecraft profile API",
+                "profile_api_response": "Profile API response",
+                "profile_data": "Profile data retrieved",
+                "profile_retrieval_error": "Profile retrieval error",
+                "profile_retrieval_exception": "Profile retrieval exception",
+                "using_cached_token": "Using cached Minecraft token",
+                "cached_token_invalid": "Cached Minecraft token invalid"
+            },
+            "common": {
+                "token_cached": "Token cached",
+                "using_cached_token": "Using cached token",
+                "token_cache_cleared": "Token cache cleared"
+            }
+        }
+    },
     "confirmationDialog": {
         "defaultCancel": "Cancel",
         "defaultConfirm": "Confirm"
@@ -288,7 +343,8 @@
         "readme": "README",
         "links": {
             "github": "GitHub",
-            "twitter": "Twitter"
+            "twitter": "Twitter",
+            "license": "Licence"
         }
     },
     "settingsPage": {
@@ -297,6 +353,11 @@
         "language": "Language Settings",
         "dataManagement": "Data Management",
         "others": "Others",
+        "java": "Java Settings",
+        "javaPath": {
+            "title": "Java Runtime Path",
+            "description": "Set the path to the Java runtime used to run Minecraft."
+        },
         "appDirectory": {
             "title": "Application Data Directory",
             "copied": "Path copied to clipboard",
@@ -345,7 +406,8 @@
             "confirmButton": "OK"
         },
         "errors": {
-            "filesInUse": "Some files ({count} files) could not be deleted because they are in use. Try closing other applications and then retry."
+            "filesInUse": "Some files ({count} files) could not be deleted because they are in use. Try closing other applications and then retry.",
+            "failed_to_load_data": "Failed to load data: {error}"
         }
     }
 }

@@ -1,4 +1,8 @@
 {
+    "javaPathSelector": {
+        "selectJavaHome": "Java ホームディレクトリを選択してください",
+        "dialogTitle": "Java ホームディレクトリを選択"
+    },
     "homePage": {
         "tabs": {
             "play": "プレイ",
@@ -9,7 +13,8 @@
         "button": {
             "launch": "Launch {name}",
             "selectProfile": "プロファイルを選択してください",
-            "launchInDifferentInstance": "別インスタンスで起動"
+            "launchInDifferentInstance": "別インスタンスで起動",
+            "alreadyRunning": "起動中"
         },
         "warning": {
             "title": "警告",
@@ -79,7 +84,7 @@
         "editProfile": "このプロファイルを編集",
         "createProfile": "新しいプロファイルを作成",
         "profileName": "プロファイル名",
-        "profileNameHint": "私のクールなプロファイル",
+        "profileNameHint": "プロファイル１号",
         "gameDirectory": "ゲームディレクトリ（任意）",
         "gameDirectoryHint": "この項目が空の場合、デフォルト値が使用されます。",
         "javaArguments": "Java引数（任意）",
@@ -89,9 +94,6 @@
         "save": "保存",
         "requiredFields": "プロファイル名とバージョンは必須です",
         "version": "バージョン",
-        "showReleases": "リリースを表示",
-        "showSnapshots": "スナップショットを表示",
-        "showOldVersions": "古いバージョンを表示",
         "latestRelease": "最新リリース",
         "latestSnapshot": "最新スナップショット",
         "noVersionsAvailable": "利用可能なバージョンがありません",
@@ -110,12 +112,15 @@
         "editTooltip": "このプロファイルを編集",
         "cannotEditTooltip": "このプロファイルは編集できません",
         "deleteTooltip": "このプロファイルを削除",
-        "cannotDeleteTooltip": "このプロファイルは削除できません"
+        "cannotDeleteTooltip": "このプロファイルは削除できません",
+        "cannotDeleteRunningTooltip": "起動中のプロファイルは削除できません"
     },
     "profileFilter": {
         "showReleases": "リリースを表示",
         "showSnapshots": "スナップショットを表示",
-        "showOldVersions": "古いバージョンを表示"
+        "showOldVersions": "古いバージョンを表示",
+        "showModProfiles": "MODプロファイルを表示",
+        "showVanillaProfiles": "バニラプロファイルを表示"
     },
     "profileSortSelector": {
         "customOrder": "カスタム順",
@@ -214,6 +219,56 @@
         "close": "閉じる",
         "title": "Xboxアカウント"
     },
+    "log": {
+        "auth": {
+            "microsoft": {
+                "requesting_device_code": "Microsoft デバイスコードをリクエスト中",
+                "device_code_obtained": "デバイスコード取得完了",
+                "starting_token_polling": "Microsoft トークンのポーリングを開始",
+                "polling_for_authorization": "トークン認証のポーリング中",
+                "authorization_successful": "Microsoft 認証成功",
+                "authorization_pending": "認証待ち",
+                "device_code_expired": "デバイスコードの有効期限切れ",
+                "refreshing_token": "Microsoft トークンを更新中",
+                "token_refreshed": "Microsoft トークン更新完了",
+                "refresh_token_cached": "Microsoft リフレッシュトークンをキャッシュしました",
+                "using_cached_refresh_token": "キャッシュされた Microsoft リフレッシュトークンを使用中",
+                "no_cached_refresh_token": "キャッシュされた Microsoft リフレッシュトークンがありません"
+            },
+            "xbox": {
+                "live_authentication": "Xbox Live 認証",
+                "getting_profile": "Xbox プロフィールを取得中",
+                "getting_xsts_token": "XSTS トークンを取得中",
+                "uhs_info": "UHS 情報",
+                "xsts_token_info": "XSTS トークン情報",
+                "extracted_xuid": "XUID を抽出しました",
+                "failed_to_extract_xuid": "XUID の抽出に失敗しました",
+                "token_cached": "Xbox トークンをキャッシュしました",
+                "using_cached_token": "キャッシュされた Xbox トークンを使用中",
+                "cached_token_invalid": "キャッシュされた Xbox トークンが無効です"
+            },
+            "minecraft": {
+                "checking_ownership": "Minecraft の所有権を確認中",
+                "ownership_check_response": "所有権確認のレスポンス",
+                "ownership_data": "所有権データ",
+                "no_items_in_entitlement": "権限内にアイテムがありません",
+                "ownership_check_error": "所有権確認エラー",
+                "ownership_check_exception": "所有権確認で例外が発生しました",
+                "calling_profile_api": "Minecraft プロファイル API を呼び出し中",
+                "profile_api_response": "プロファイル API レスポンス",
+                "profile_data": "プロファイルデータを取得しました",
+                "profile_retrieval_error": "プロファイル取得エラー",
+                "profile_retrieval_exception": "プロファイル取得で例外が発生しました",
+                "using_cached_token": "キャッシュされた Minecraft トークンを使用中",
+                "cached_token_invalid": "キャッシュされた Minecraft トークンが無効です"
+            },
+            "common": {
+                "token_cached": "トークンをキャッシュしました",
+                "using_cached_token": "キャッシュされたトークンを使用中",
+                "token_cache_cleared": "トークンキャッシュをクリアしました"
+            }
+        }
+    },
     "profileList": {
         "noMatchingProfiles": "フィルター条件に一致するプロファイルがありません",
         "sortOptions": {
@@ -288,7 +343,8 @@
         "readme": "README",
         "links": {
             "github": "GitHub",
-            "twitter": "Twitter"
+            "twitter": "Twitter",
+            "license": "ライセンス"
         }
     },
     "settingsPage": {
@@ -297,6 +353,11 @@
         "language": "言語設定",
         "dataManagement": "データ管理",
         "others": "その他",
+        "java": "Java設定",
+        "javaPath": {
+            "title": "Java実行環境のパス",
+            "description": "Minecraftの実行に使用するJavaのパスを設定します。"
+        },
         "appDirectory": {
             "title": "アプリケーションデータの保存先",
             "copied": "パスをクリップボードにコピーしました",
@@ -345,7 +406,8 @@
             "confirmButton": "OK"
         },
         "errors": {
-            "filesInUse": "一部のファイル（{count}個）は使用中のため削除できません。他のアプリケーションを閉じてから再試行してください。"
+            "filesInUse": "一部のファイル（{count}個）は使用中のため削除できません。他のアプリケーションを閉じてから再試行してください。",
+            "failed_to_load_data": "データの読み込みに失敗しました: {error}"
         }
     }
 }
