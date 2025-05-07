@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_quill/quill_delta.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:karasu_launcher/providers/log_provider.dart';
 import 'dart:async';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 
 class LogTab extends ConsumerStatefulWidget {
   const LogTab({super.key});
@@ -34,6 +36,7 @@ class _LogTabState extends ConsumerState<LogTab>
   int _displayedLogsCount = 20;
   bool _isLoadingMore = false;
   static const int _loadBatchSize = 20;
+  QuillController _quillController = QuillController.basic();
 
   @override
   void initState() {
@@ -51,6 +54,11 @@ class _LogTabState extends ConsumerState<LogTab>
         _updateLogsWithoutFullReload(currentLogs);
       }
     });
+
+    _quillController = QuillController(
+      document: Document(),
+      selection: const TextSelection.collapsed(offset: 0),
+    );
   }
 
   void _updateLogsWithoutFullReload(List<LogMessage> currentLogs) {
@@ -72,6 +80,8 @@ class _LogTabState extends ConsumerState<LogTab>
     }
 
     setState(() {
+      _updateQuillDocument();
+
       if (wasEmpty ||
           (_autoScroll &&
               _currentFilteredLogs.length > _previousLogCount &&
@@ -88,6 +98,7 @@ class _LogTabState extends ConsumerState<LogTab>
     _scrollController.removeListener(_handleScrollChange);
     _scrollController.dispose();
     _loadingScrollController.dispose();
+    _quillController.dispose();
     super.dispose();
   }
 
@@ -146,6 +157,7 @@ class _LogTabState extends ConsumerState<LogTab>
       _displayedLogsCount = 20;
       _previousLogCount = 0;
       _currentFilteredLogs.clear();
+      _quillController.clear();
     });
   }
 
@@ -156,6 +168,7 @@ class _LogTabState extends ConsumerState<LogTab>
       _currentFilteredLogs = _filteredLogs(_lastLogs);
       _needsRefiltration = false;
       _displayedLogsCount = 20;
+      _updateQuillDocument();
 
       if (_autoScroll && _currentFilteredLogs.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -200,6 +213,52 @@ class _LogTabState extends ConsumerState<LogTab>
             : 0;
 
     return _currentFilteredLogs.sublist(startIndex);
+  }
+
+  void _updateQuillDocument() {
+    final displayedLogs = _getDisplayedLogs();
+
+    final Delta delta = Delta();
+
+    if (displayedLogs.isEmpty) {
+      delta.insert('\n');
+    } else {
+      for (int i = 0; i < displayedLogs.length; i++) {
+        final log = displayedLogs[i];
+        final logText =
+            '${_getFormattedTimestamp(log.timestamp)} ${log.message}\n';
+
+        final color = _getColorForLog(log);
+        final colorHex = '#${color.toARGB32().toRadixString(16).substring(2)}';
+
+        delta.insert(logText, {'color': colorHex, 'font': 'monospace'});
+      }
+    }
+
+    try {
+      final document = Document.fromDelta(delta);
+
+      final currentOffset = _quillController.selection.baseOffset;
+      final isAtEnd = currentOffset >= _quillController.document.length - 1;
+
+      _quillController.document = document;
+
+      if (_autoScroll && !_isManualScrolling) {
+        _quillController.updateSelection(
+          TextSelection.collapsed(offset: document.length),
+          ChangeSource.local,
+        );
+      } else if (!isAtEnd &&
+          currentOffset > 0 &&
+          currentOffset < document.length) {
+        _quillController.updateSelection(
+          TextSelection.collapsed(offset: currentOffset),
+          ChangeSource.local,
+        );
+      }
+    } catch (e) {
+      debugPrint('QuillController更新エラー: $e');
+    }
   }
 
   @override
@@ -348,47 +407,53 @@ class _LogTabState extends ConsumerState<LogTab>
             child:
                 displayedLogs.isEmpty
                     ? Center(
-                      child: Text(
+                      child: SelectableText(
                         FlutterI18n.translate(context, 'logTab.noLogs'),
+                        style: const TextStyle(color: Colors.white70),
                       ),
                     )
                     : RepaintBoundary(
                       child: Stack(
                         children: [
-                          CustomScrollView(
-                            controller: _scrollController,
-                            slivers: [
-                              if (_isLoadingMore)
-                                const SliverToBoxAdapter(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(8.0),
-                                    child: Center(
-                                      child: SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                          QuillEditor(
+                            controller: _quillController,
+                            scrollController: _scrollController,
+                            focusNode: FocusNode(),
+                            config: QuillEditorConfig(
+                              scrollable: true,
+                              autoFocus: false,
 
-                              SliverList(
-                                delegate: SliverChildBuilderDelegate((
-                                  context,
-                                  index,
-                                ) {
-                                  final log = displayedLogs[index];
-                                  return Text(
-                                    '${_getFormattedTimestamp(log.timestamp)} ${log.message}',
-                                    style: TextStyle(
-                                      color: _getColorForLog(log),
-                                    ),
-                                  );
-                                }, childCount: displayedLogs.length),
+                              expands: true,
+                              padding: const EdgeInsets.all(8),
+                              keyboardAppearance: Brightness.dark,
+                              enableSelectionToolbar: true,
+                              showCursor: false,
+                              placeholder: FlutterI18n.translate(
+                                context,
+                                'logTab.noLogs',
                               ),
-                            ],
+                              customStyles: DefaultStyles(
+                                placeHolder: DefaultTextBlockStyle(
+                                  const TextStyle(color: Colors.white70),
+                                  const HorizontalSpacing(0, 0),
+                                  const VerticalSpacing(0, 0),
+                                  const VerticalSpacing(0, 0),
+                                  null,
+                                ),
+                                paragraph: DefaultTextBlockStyle(
+                                  const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    height: 1.3,
+                                    fontFamily: 'monospace',
+                                  ),
+                                  const HorizontalSpacing(0, 0),
+                                  const VerticalSpacing(0, 0),
+                                  const VerticalSpacing(0, 0),
+                                  null,
+                                ),
+                              ),
+                            ),
                           ),
 
                           if (_currentFilteredLogs.length > _displayedLogsCount)
@@ -439,9 +504,9 @@ class _LogTabState extends ConsumerState<LogTab>
       try {
         final maxExtent = _scrollController.position.maxScrollExtent;
         _scrollController.animateTo(
-          maxExtent + 200,
+          maxExtent,
           duration: const Duration(milliseconds: 300),
-          curve: Curves.linear,
+          curve: Curves.easeOut,
         );
       } catch (e) {
         debugPrint('Scroll error: $e');

@@ -7,7 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 final javaProvider = ChangeNotifierProvider<JavaProvider>(
-  (ref) => JavaProvider()..loadJavaHome(),
+  (ref) => JavaProvider(),
 );
 
 class JavaProvider extends ChangeNotifier {
@@ -16,6 +16,11 @@ class JavaProvider extends ChangeNotifier {
   String? _customJavaHome;
 
   Map<String, String> _javaVersions = {};
+
+  // コンストラクタを追加し、初期化時に設定からJavaパスを読み込む
+  JavaProvider() {
+    loadJavaHome();
+  }
 
   String? get customJavaHome => _customJavaHome;
   Map<String, String> get javaVersions => _javaVersions;
@@ -238,7 +243,7 @@ class JavaProvider extends ChangeNotifier {
       return false;
     }).toList();
   }
-  
+
   // バージョン文字列からメジャーバージョンを抽出する（静的メソッド）
   static int? extractMajorVersionFromString(String version) {
     final majorMatch = RegExp(r'(\d+)').firstMatch(version);

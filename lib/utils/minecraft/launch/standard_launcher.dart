@@ -10,6 +10,8 @@ import 'package:karasu_launcher/models/version_info.dart';
 import 'package:karasu_launcher/providers/java_provider.dart';
 import 'package:karasu_launcher/providers/log_provider.dart';
 import 'package:karasu_launcher/utils/file_utils.dart';
+import 'package:karasu_launcher/utils/minecraft/launch/library_builder.dart';
+import 'package:karasu_launcher/utils/minecraft/launch/native_library_builder.dart';
 import 'package:karasu_launcher/utils/minecraft_utils.dart';
 import 'package:karasu_launcher/utils/minecraft/jvm_builder.dart';
 import 'package:path/path.dart' as p;
@@ -32,11 +34,15 @@ class StandardLauncher extends BaseLauncher<StandardLauncher>
   static const String _defaultClientId = '00000000402b5328';
   static const String _defaultUuid = '00000000-0000-0000-0000-000000000000';
   static const String _defaultAccessToken = '00000000000000000000000000000000';
-  Map<String, (String, String)> _libraryVersionMap =
-      <String, (String, String)>{};
   Profile? _profile;
   VersionInfo? _versionInfo;
   String? _cachedVersionId;
+
+  /// ライブラリビルダー
+  final LibraryBuilder _libraryBuilder = LibraryBuilder();
+
+  /// ネイティブライブラリビルダー
+  final NativeLibraryBuilder _nativeLibraryBuilder = NativeLibraryBuilder();
 
   Future<VersionInfo> _getOrFetchVersionInfo(String versionId) async {
     if (_versionInfo != null && _cachedVersionId == versionId) {
@@ -176,7 +182,10 @@ class StandardLauncher extends BaseLauncher<StandardLauncher>
           launcherVersion: _launcherVersion,
           classpath: classpath,
         )
-        .withSystemProperty('java.library.path', nativeDir)
+        .withSystemProperty(
+          'java.library.path',
+          _nativeLibraryBuilder.buildNativeLibraryPath(nativeDir),
+        )
         .withSystemProperty('minecraft.launcher.brand', _launcherBrand)
         .withSystemProperty('minecraft.launcher.version', _launcherVersion)
         .withMaxMemory(_defaultMemory);
@@ -453,23 +462,12 @@ class StandardLauncher extends BaseLauncher<StandardLauncher>
         onNativesProgress: onNativesProgress,
       );
       final versionInfo = await _getOrFetchVersionInfo(versionId);
-
       final classpath = await buildClasspath(versionInfo, versionId);
       final appDir = await createAppDirectory();
       final nativeDir = p.join(appDir.path, 'natives', versionId);
-
       final mainClass = await getMainClass();
       if (mainClass.isEmpty) {
         throw Exception('No mainClass specified in version info');
-      }
-      final customNativeDirs =
-          profile.gameDir != null && profile.gameDir!.isNotEmpty
-              ? [nativeDir, p.join(profile.gameDir!, 'natives')]
-              : [nativeDir];
-
-      final systemLibraryPath = Platform.environment['PATH'];
-      if (systemLibraryPath != null && systemLibraryPath.isNotEmpty) {
-        customNativeDirs.add(systemLibraryPath);
       }
 
       final jvmBuilder = JvmArgsBuilder()
@@ -477,7 +475,7 @@ class StandardLauncher extends BaseLauncher<StandardLauncher>
           .withMinMemory('1G')
           .withSystemProperty(
             'java.library.path',
-            customNativeDirs.join(Platform.isWindows ? ';' : ':'),
+            _nativeLibraryBuilder.buildNativeLibraryPath(nativeDir),
           )
           .withSystemProperty('minecraft.launcher.brand', _launcherBrand)
           .withSystemProperty('minecraft.launcher.version', _launcherVersion);
@@ -618,8 +616,9 @@ class StandardLauncher extends BaseLauncher<StandardLauncher>
       final appDir = await createAppDirectory();
       final nativeDir = p.join(appDir.path, 'natives', versionId);
 
-      await extractNativeLibraries(
+      await _nativeLibraryBuilder.extractNativeLibraries(
         versionInfo,
+        versionId,
         nativeDir,
         onProgress: onNativesProgress,
       );
@@ -695,7 +694,11 @@ class StandardLauncher extends BaseLauncher<StandardLauncher>
       final appDir = await createAppDirectory();
       final nativeDir = p.join(appDir.path, 'natives', versionId);
 
-      await extractNativeLibraries(versionInfo, nativeDir);
+      await _nativeLibraryBuilder.extractNativeLibraries(
+        versionInfo,
+        versionId,
+        nativeDir,
+      );
 
       debugPrint('Complete download of Minecraft version $versionId finished');
     } catch (e) {
@@ -929,86 +932,7 @@ class StandardLauncher extends BaseLauncher<StandardLauncher>
     String versionId,
   ) async {
     try {
-      final appDir = await createAppDirectory();
-      final librariesDir = p.join(appDir.path, 'libraries');
-      final versionsDir = p.join(appDir.path, 'versions');
-      final versionJarPath = p.join(versionsDir, versionId, '$versionId.jar');
-
-      _libraryVersionMap = <String, (String, String)>{};
-
-      if (await File(versionJarPath).exists()) {
-        _libraryVersionMap['minecraft:client'] = (versionId, versionJarPath);
-      }
-
-      if (versionInfo.libraries != null) {
-        final validLibraries = _filterValidLibraries(versionInfo.libraries!);
-        for (final library in validLibraries) {
-          String? libraryPath;
-          String? libraryVersion;
-          String? libraryKey;
-
-          if (library.downloads?.artifact != null) {
-            final artifact = library.downloads!.artifact!;
-            if (artifact.path != null) {
-              libraryPath = p.join(librariesDir, artifact.path!);
-              final nameParts = library.name?.split(':');
-              if (nameParts != null && nameParts.length >= 3) {
-                libraryKey = '${nameParts[0]}:${nameParts[1]}';
-                libraryVersion = nameParts[2];
-              }
-            }
-          } else if (library.name != null) {
-            final parts = library.name!.split(':');
-            if (parts.length >= 3) {
-              final normalizedGroup =
-                  parts[0].replaceAll('/', '.').toLowerCase();
-              final artifact = parts[1];
-              final version = parts[2];
-              libraryKey = '$normalizedGroup:$artifact';
-              libraryVersion = version;
-
-              String fileName = '$artifact-$version.jar';
-              if (parts.length > 3 && parts[3].isNotEmpty) {
-                fileName = '$artifact-$version-${parts[3]}.jar';
-              }
-
-              final relativePath = p.join(
-                parts[0].replaceAll('.', '/'),
-                artifact,
-                version,
-                fileName,
-              );
-              libraryPath = p.join(librariesDir, relativePath);
-            }
-          }
-
-          if (libraryPath != null &&
-              libraryKey != null &&
-              libraryVersion != null &&
-              await File(libraryPath).exists()) {
-            libraryPath = p.normalize(libraryPath);
-            final existingEntry = _libraryVersionMap[libraryKey];
-
-            if (existingEntry == null ||
-                compareVersions(libraryVersion, existingEntry.$1) > 0) {
-              if (existingEntry != null) {
-                debugPrint(
-                  'Upgrading library $libraryKey from ${existingEntry.$1} to $libraryVersion',
-                );
-              }
-              _libraryVersionMap[libraryKey] = (libraryVersion, libraryPath);
-            } else if (compareVersions(libraryVersion, existingEntry.$1) == 0 &&
-                libraryPath != existingEntry.$2) {
-              debugPrint(
-                'Warning: Duplicate library version for $libraryKey: $libraryVersion. Using ${existingEntry.$2}',
-              );
-            }
-          }
-        }
-      }
-      final paths = _libraryVersionMap.values.map((e) => e.$2).toList();
-
-      return buildFinalClasspathString(paths);
+      return await _libraryBuilder.buildClasspath(versionInfo, versionId);
     } catch (e) {
       debugPrint('Error building classpath: $e');
       throw Exception('Failed to build classpath: $e');
@@ -1136,6 +1060,6 @@ class StandardLauncher extends BaseLauncher<StandardLauncher>
 
   @override
   Map<String, (String, String)> getClassPathMap() {
-    return _libraryVersionMap;
+    return _libraryBuilder.getLibraryVersionMap();
   }
 }

@@ -230,28 +230,32 @@ Future<void> extractJar(String jarPath, String targetDir) async {
   }
 }
 
-/// ネイティブファイルをコピーする
-Future<void> copyNativeFiles(String sourceDir, String targetDir) async {
-  try {
-    final sourceDirectory = Directory(sourceDir);
-    if (!await sourceDirectory.exists()) return;
+/// 抽出したネイティブファイルをターゲットディレクトリにコピーする
+Future<void> copyNativeFiles(
+  String sourceDir,
+  String targetDir, {
+  bool skipExisting = false,
+}) async {
+  final dir = Directory(sourceDir);
+  if (!await dir.exists()) return;
 
-    final entities = await sourceDirectory.list(recursive: true).toList();
+  final entries = await dir.list(recursive: true).toList();
+  for (final entry in entries) {
+    if (entry is File) {
+      final relativePath = p.relative(entry.path, from: sourceDir);
+      final targetPath = p.join(targetDir, relativePath);
+      final targetFile = File(targetPath);
 
-    for (final entity in entities) {
-      if (entity is File) {
-        final relativePath = p.relative(entity.path, from: sourceDir);
-        if (relativePath.endsWith('.dll') ||
-            relativePath.endsWith('.so') ||
-            relativePath.endsWith('.dylib')) {
-          final targetPath = p.join(targetDir, p.basename(entity.path));
-          if (!await File(targetPath).exists()) {
-            await entity.copy(targetPath);
-          }
-        }
+      // 既存ファイルのチェックとスキップ
+      if (skipExisting && await targetFile.exists()) {
+        continue;
       }
+
+      // ターゲットディレクトリが存在することを確認
+      await Directory(p.dirname(targetPath)).create(recursive: true);
+
+      // ファイルをコピー
+      await entry.copy(targetPath);
     }
-  } catch (e) {
-    debugPrint('Failed to copy native files: $e');
   }
 }

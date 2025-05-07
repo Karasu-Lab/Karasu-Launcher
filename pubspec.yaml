@@ -44,6 +44,7 @@ dependencies:
   twemoji: ^0.1.0
   pub_semver: ^2.2.0
   text_search: ^1.0.2
+  flutter_quill: ^11.4.0
 
 dev_dependencies:
   flutter_test:
