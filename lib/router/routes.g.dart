@@ -26,6 +26,23 @@ RouteBase get $mainShellRouteData => StatefulShellRouteData.$route(
           path: '/settings',
 
           factory: $SettingPageRouteExtension._fromState,
+          routes: [
+            GoRouteData.$route(
+              path: 'general',
+
+              factory: $GeneralSettingsRouteExtension._fromState,
+            ),
+            GoRouteData.$route(
+              path: 'java',
+
+              factory: $JavaSettingsRouteExtension._fromState,
+            ),
+            GoRouteData.$route(
+              path: 'data',
+
+              factory: $DataManagementRouteExtension._fromState,
+            ),
+          ],
         ),
       ],
     ),
@@ -135,6 +152,54 @@ extension $SettingPageRouteExtension on SettingPageRoute {
       const SettingPageRoute();
 
   String get location => GoRouteData.$location('/settings');
+
+  void go(BuildContext context) => context.go(location);
+
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  void replace(BuildContext context) => context.replace(location);
+}
+
+extension $GeneralSettingsRouteExtension on GeneralSettingsRoute {
+  static GeneralSettingsRoute _fromState(GoRouterState state) =>
+      const GeneralSettingsRoute();
+
+  String get location => GoRouteData.$location('/settings/general');
+
+  void go(BuildContext context) => context.go(location);
+
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  void replace(BuildContext context) => context.replace(location);
+}
+
+extension $JavaSettingsRouteExtension on JavaSettingsRoute {
+  static JavaSettingsRoute _fromState(GoRouterState state) =>
+      const JavaSettingsRoute();
+
+  String get location => GoRouteData.$location('/settings/java');
+
+  void go(BuildContext context) => context.go(location);
+
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  void replace(BuildContext context) => context.replace(location);
+}
+
+extension $DataManagementRouteExtension on DataManagementRoute {
+  static DataManagementRoute _fromState(GoRouterState state) =>
+      const DataManagementRoute();
+
+  String get location => GoRouteData.$location('/settings/data');
 
   void go(BuildContext context) => context.go(location);
 

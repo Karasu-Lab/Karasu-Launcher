@@ -14,7 +14,7 @@ import 'package:karasu_launcher/widgets/animated_side_menu.dart';
 import 'package:karasu_launcher/widgets/side_menu_toggle_button.dart';
 
 import '../pages/home_page.dart';
-import '../pages/setting_page.dart';
+import '../pages/settings/settings_page.dart';
 import '../pages/loading_page.dart';
 import '../pages/account/account_home_page.dart';
 import '../pages/account/account_sign_in_page.dart';

@@ -8,6 +8,7 @@ import '../providers/side_menu_provider.dart';
 import '../providers/authentication_provider.dart';
 import './account/user_icon.dart';
 import 'package:twemoji/twemoji.dart';
+import './animations/side_menu_animation.dart';
 
 class AnimatedSideMenu extends ConsumerStatefulWidget {
   const AnimatedSideMenu({super.key});
@@ -19,7 +20,8 @@ class AnimatedSideMenu extends ConsumerStatefulWidget {
 class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _widthAnimation;
+  late SideMenuAnimation _animation;
+
   @override
   void initState() {
     super.initState();
@@ -27,9 +29,7 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
-    _widthAnimation = Tween<double>(begin: 0.05, end: 0.2).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+    _animation = SideMenuAnimation(controller: _animationController);
 
     final isMenuOpen = ref.read(sideMenuOpenProvider);
     if (isMenuOpen) {
@@ -46,26 +46,12 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
   @override
   Widget build(BuildContext context) {
     ref.listen(sideMenuOpenProvider, (previous, next) {
-      if (next) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
+      _animation.setMenuState(next);
     });
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
-        final animationValue = _animationController.value;
-        final isMenuOpen = animationValue > 0.5;
-
-        const double iconWidth = 44.0;
-        const double expandedWidth = 180.0;
-
-        final menuWidth =
-            isMenuOpen
-                ? iconWidth +
-                    (expandedWidth - iconWidth) * ((animationValue - 0.5) * 2)
-                : iconWidth;
+        final menuWidth = _animation.calculateMenuWidth();
 
         return SizedBox(
           width: menuWidth,
@@ -156,8 +142,7 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
   }
 
   Widget _buildMenuItem(dynamic iconData, String title, {String? path}) {
-    final animationValue = _animationController.value;
-    final showText = animationValue > 0.5;
+    final showText = _animation.isMenuOpen;
     final currentLocation = GoRouterState.of(context).matchedLocation;
     final isActive = path != null && currentLocation == path;
 
@@ -230,10 +215,7 @@ class _AnimatedSideMenuState extends ConsumerState<AnimatedSideMenu>
                   showText
                       ? AnimatedOpacity(
                         duration: const Duration(milliseconds: 150),
-                        opacity:
-                            animationValue < 0.7
-                                ? 0
-                                : (animationValue - 0.7) * 3.3,
+                        opacity: _animation.getTextOpacity(),
                         child: Text(
                           title,
                           style: TextStyle(
